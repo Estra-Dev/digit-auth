@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import { User, type UserDocument } from "../model/user.model.js";
 
 export class UserRepository {
@@ -33,6 +34,21 @@ export class UserRepository {
     return User.findOne({
       email: email.toLowerCase(),
     }).select("+passwordHashed");
+  }
+
+  async verifyUser(userId: Types.ObjectId): Promise<void> {
+    await User.findByIdAndUpdate(userId, {
+      emailVerified: true,
+    });
+  }
+
+  async updatePassword(
+    userId: Types.ObjectId,
+    passwordHashed: string,
+  ): Promise<void> {
+    await User.findByIdAndUpdate(userId, {
+      passwordHashed,
+    });
   }
 }
 

@@ -64,3 +64,55 @@ export const logoutAll = asyncHandler(async (req: Request, res: Response) => {
     data: null,
   });
 });
+
+export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
+  const { token } = req.body;
+
+  await authService.verifyEmail(token);
+
+  return ApiResponse.success(res, {
+    statusCode: 200,
+    message: "Email Verified Successfully",
+    data: null,
+  });
+});
+
+export const resendVerificationEmail = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    await authService.resendVerificationEmail(email);
+
+    return ApiResponse.success(res, {
+      statusCode: 200,
+      message: "If an account exists, a verification email sent.",
+      data: null,
+    });
+  },
+);
+
+export const forgotPassword = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    await authService.forgotPassword(email);
+
+    return ApiResponse.success(res, {
+      statusCode: 200,
+      message: "If an account exists, a password reset email has been sent.",
+      data: null,
+    });
+  },
+);
+
+export const resetPassword = asyncHandler(
+  async (req: Request, res: Response) => {
+    await authService.resetPassword(req.body);
+
+    return ApiResponse.success(res, {
+      statusCode: 200,
+      message: "Password reset successfully.",
+      data: null,
+    });
+  },
+);

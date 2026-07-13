@@ -31,6 +31,10 @@ export class SessionRepository {
     await Session.findByIdAndDelete(id);
   }
 
+  async deleteByUserId(userId: Types.ObjectId): Promise<void> {
+    await Session.deleteMany(userId);
+  }
+
   // delete all session for a user
   async deleteAllForUser(userId: Types.ObjectId): Promise<void> {
     await Session.deleteMany({ userId });

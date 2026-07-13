@@ -18,6 +18,9 @@ const envSchema = z.object({
   SESSION_EXPIRES_IN_DAYS: z.coerce.number().default(30),
 
   MONGODB_URI: z.string().min(1),
+
+  RESEND_API_KEY: z.string().min(1),
+  EMAIL_FROM: z.string().min(1),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
