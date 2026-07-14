@@ -1,17 +1,25 @@
-import { Types } from "mongoose";
+import { Types, type ClientSession } from "mongoose";
 import { Session, type SessionDocument } from "../model/session.model.js";
+import { withSession } from "../../../shared/utils/mongoose.js";
 
 export class SessionRepository {
   // create a new session
 
-  async create(data: {
-    userId: Types.ObjectId;
-    refreshTokenHash: string;
-    userAgent?: string | null;
-    ipAddress?: string | null;
-    expiresAt: Date;
-  }): Promise<SessionDocument> {
-    return Session.create(data);
+  async create(
+    data: {
+      userId: Types.ObjectId;
+      refreshTokenHash: string;
+      userAgent?: string | null;
+      ipAddress?: string | null;
+      expiresAt: Date;
+    },
+    session?: ClientSession,
+  ): Promise<SessionDocument> {
+    const sessionDoc = new Session(data);
+
+    await sessionDoc.save(withSession(session));
+
+    return sessionDoc;
   }
 
   // find a session by id
@@ -27,12 +35,15 @@ export class SessionRepository {
   }
 
   // delete one Session
-  async deleteById(id: string): Promise<void> {
-    await Session.findByIdAndDelete(id);
+  async deleteById(id: string, session?: ClientSession): Promise<void> {
+    await Session.findByIdAndDelete(id, withSession(session));
   }
 
-  async deleteByUserId(userId: Types.ObjectId): Promise<void> {
-    await Session.deleteMany(userId);
+  async deleteByUserId(
+    userId: Types.ObjectId,
+    session?: ClientSession,
+  ): Promise<void> {
+    await Session.deleteMany({ userId }, withSession(session));
   }
 
   // delete all session for a user

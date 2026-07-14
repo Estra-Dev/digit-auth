@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { passwordService } from "./../security/password/password.service.js";
 import { AppError } from "../core/errors/AppError.js";
 import { userRepository } from "../modules/auth/repositories/user.repository.js";
@@ -286,38 +286,55 @@ export class AuthService {
   }
 
   async resetPassword(data: ResetPasswordInput): Promise<void> {
-    // Hash incoming token
+    const session = await mongoose.startSession();
 
-    const tokenHash = tokenHashService.hash(data.token);
+    try {
+      session.startTransaction();
 
-    // Find stored token
-    const passwordResetToken =
-      await passwordResetTokenRepository.findByTokenHash(tokenHash);
+      // Hash incoming token
 
-    if (!passwordResetToken) {
-      throw new AppError("Invalid or expired token", 400, true);
+      const tokenHash = tokenHashService.hash(data.token);
+
+      // Find stored token
+      const passwordResetToken =
+        await passwordResetTokenRepository.findByTokenHash(tokenHash);
+
+      if (!passwordResetToken) {
+        throw new AppError("Invalid or expired token", 400, true);
+      }
+
+      // find user
+      const user = await userRepository.findById(
+        passwordResetToken.userId.toString(),
+      );
+
+      if (!user) {
+        throw new AppError("User not found", 404, true);
+      }
+
+      // Hash new password
+      const passwordHashed = await passwordService.hash(data.password);
+
+      // Update password
+      await userRepository.updatePassword(user._id, passwordHashed, session);
+
+      // Delete reset token
+      await passwordResetTokenRepository.deleteById(
+        passwordResetToken.id,
+        session,
+      );
+
+      // Delete ALL sessions
+      await sessionRepository.deleteByUserId(user._id, session);
+
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+
+      throw error;
+    } finally {
+      await session.endSession();
     }
-
-    // find user
-    const user = await userRepository.findById(
-      passwordResetToken.userId.toString(),
-    );
-
-    if (!user) {
-      throw new AppError("User not found", 404, true);
-    }
-
-    // Hash new password
-    const passwordHashed = await passwordService.hash(data.password);
-
-    // Update password
-    await userRepository.updatePassword(user._id, passwordHashed);
-
-    // Delete reset token
-    await passwordResetTokenRepository.deleteById(passwordResetToken.id);
-
-    // Delete ALL sessions
-    await sessionRepository.deleteByUserId(user._id);
   }
 }
 

@@ -1,5 +1,6 @@
-import { Types } from "mongoose";
+import { Types, type ClientSession } from "mongoose";
 import { User, type UserDocument } from "../model/user.model.js";
+import { withSession } from "../../../shared/utils/mongoose.js";
 
 export class UserRepository {
   // find a user by email
@@ -18,16 +19,23 @@ export class UserRepository {
 
   // create a new user
 
-  async create(data: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    passwordHashed: string;
-  }): Promise<UserDocument> {
-    return User.create({
+  async create(
+    data: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      passwordHashed: string;
+    },
+    session?: ClientSession,
+  ): Promise<UserDocument> {
+    const user = new User({
       ...data,
       email: data.email.toLowerCase(),
     });
+
+    await user.save(withSession(session));
+
+    return user;
   }
 
   async findEmailWithPassword(email: string): Promise<UserDocument | null> {
@@ -45,10 +53,15 @@ export class UserRepository {
   async updatePassword(
     userId: Types.ObjectId,
     passwordHashed: string,
+    session?: ClientSession,
   ): Promise<void> {
-    await User.findByIdAndUpdate(userId, {
-      passwordHashed,
-    });
+    await User.findByIdAndUpdate(
+      userId,
+      {
+        passwordHashed,
+      },
+      withSession(session),
+    );
   }
 }
 

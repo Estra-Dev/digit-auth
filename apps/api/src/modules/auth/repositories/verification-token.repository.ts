@@ -1,16 +1,24 @@
-import { Types } from "mongoose";
+import { Types, type ClientSession } from "mongoose";
 import {
   VerificationToken,
   type VerificationTokenDocument,
 } from "../model/verification-token.model.js";
+import { withSession } from "../../../shared/utils/mongoose.js";
 
 export class VerificationTokenRepository {
-  async create(data: {
-    userId: Types.ObjectId;
-    tokenHash: string;
-    expiresAt: Date;
-  }): Promise<VerificationTokenDocument> {
-    return VerificationToken.create(data);
+  async create(
+    data: {
+      userId: Types.ObjectId;
+      tokenHash: string;
+      expiresAt: Date;
+    },
+    session?: ClientSession,
+  ): Promise<VerificationTokenDocument> {
+    const token = new VerificationToken(data);
+
+    await token.save(withSession(session));
+
+    return token;
   }
 
   async findByTokenHash(
@@ -21,12 +29,15 @@ export class VerificationTokenRepository {
     }).select("+tokenHash");
   }
 
-  async deleteById(id: string): Promise<void> {
-    await VerificationToken.findByIdAndDelete(id);
+  async deleteById(id: string, session?: ClientSession): Promise<void> {
+    await VerificationToken.findByIdAndDelete(id, withSession(session));
   }
 
-  async deleteByUserId(userId: Types.ObjectId): Promise<void> {
-    await VerificationToken.deleteMany({ userId });
+  async deleteByUserId(
+    userId: Types.ObjectId,
+    session?: ClientSession,
+  ): Promise<void> {
+    await VerificationToken.deleteMany({ userId }, withSession(session));
   }
 }
 
