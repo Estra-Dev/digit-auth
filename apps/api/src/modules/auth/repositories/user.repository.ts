@@ -44,10 +44,17 @@ export class UserRepository {
     }).select("+passwordHashed");
   }
 
-  async verifyUser(userId: Types.ObjectId): Promise<void> {
-    await User.findByIdAndUpdate(userId, {
-      emailVerified: true,
-    });
+  async verifyUser(
+    userId: Types.ObjectId,
+    session?: ClientSession,
+  ): Promise<void> {
+    await User.findByIdAndUpdate(
+      userId,
+      {
+        emailVerified: true,
+      },
+      withSession(session),
+    );
   }
 
   async updatePassword(

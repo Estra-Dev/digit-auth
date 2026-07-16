@@ -51,22 +51,18 @@ export class SessionRepository {
     await Session.deleteMany({ userId });
   }
 
-  // Find session by user ID and refresh token hash
-  async findByUserIdAndToken(
-    userId: Types.ObjectId,
-    refreshTokenHash: string,
-  ): Promise<SessionDocument | null> {
-    return Session.findOne({
-      userId,
-      refreshTokenHash,
-    }).select("+refreshTokenHash");
-  }
-
   // Update last used time
-  async updateLastUsed(sessionId: string): Promise<void> {
-    await Session.findByIdAndUpdate(sessionId, {
-      lastUsedAt: new Date(),
-    });
+  async updateLastUsed(
+    sessionId: string,
+    session?: ClientSession,
+  ): Promise<void> {
+    await Session.findByIdAndUpdate(
+      sessionId,
+      {
+        lastUsedAt: new Date(),
+      },
+      withSession(session),
+    );
   }
 
   // Delete expired sessions
@@ -78,12 +74,21 @@ export class SessionRepository {
     });
   }
 
+  // Find session by user ID and refresh token hash
   async findByUserIdAndRefreshTokenHash(
     userId: Types.ObjectId,
     refreshTokenHash: string,
   ): Promise<SessionDocument | null> {
     return Session.findOne({
       userId,
+      refreshTokenHash,
+    }).select("+refreshTokenHash");
+  }
+
+  async findByRefreshTokenHash(
+    refreshTokenHash: string,
+  ): Promise<SessionDocument | null> {
+    return Session.findOne({
       refreshTokenHash,
     }).select("+refreshTokenHash");
   }

@@ -5,7 +5,6 @@ import {
   type HydratedDocument,
   model,
 } from "mongoose";
-import { required } from "zod/mini";
 
 const passwordResetTokenSchema = new Schema(
   {

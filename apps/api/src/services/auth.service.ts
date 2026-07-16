@@ -10,15 +10,12 @@ import { UserMapper } from "../modules/auth/mapper/user.mapper.js";
 import { sessionRepository } from "../modules/auth/repositories/session.repository.js";
 import { addDays } from "../shared/utils/date.js";
 import { config } from "../config/index.js";
-import { email } from "zod";
 import { verificationTokenRepository } from "../modules/auth/repositories/verification-token.repository.js";
 import { emailService } from "../modules/email/index.js";
 import { logger } from "../config/logger.js";
-import {
-  PasswordResetRepository,
-  passwordResetTokenRepository,
-} from "../modules/auth/repositories/password-reset-token.repository.js";
+import { passwordResetTokenRepository } from "../modules/auth/repositories/password-reset-token.repository.js";
 import type { ResetPasswordInput } from "../validators/reset-password.schema.js";
+import type { RefreshTokenInput } from "../validators/refresh-token.schema.js";
 
 export class AuthService {
   async register(data: RegisterInput) {
@@ -68,7 +65,7 @@ export class AuthService {
     }
     if (!user.emailVerified) {
       throw new AppError(
-        "Please verify your email before loggin in",
+        "Please verify your email before logging in",
         403,
         true,
       );
@@ -100,14 +97,14 @@ export class AuthService {
     };
   }
 
-  async refreshToken(refreshToken: string) {
+  async refreshToken(data: RefreshTokenInput) {
     // Verify the refresh token
-    const payload = await jwtService.verifyRefreshToken(refreshToken);
+    const payload = await jwtService.verifyRefreshToken(data.refreshToken);
 
     // console.log(payload);
 
     // Hash the incoming refresh token
-    const refreshTokenHash = tokenHashService.hash(refreshToken);
+    const refreshTokenHash = tokenHashService.hash(data.refreshToken);
 
     // Find the matching session
     const session = await sessionRepository.findByUserIdAndRefreshTokenHash(
@@ -120,34 +117,50 @@ export class AuthService {
       throw new AppError("Invalid Refresh Token", 401, true);
     }
 
-    // Delete the old session (rotation)
-    await sessionRepository.deleteById(session.id);
+    const dbSession = await mongoose.startSession();
 
-    //  Create a fresh JWT payload
-    const newPayload = {
-      sub: payload.sub,
-      email: payload.email,
-    };
+    try {
+      dbSession.startTransaction();
 
-    // Generate new tokens
-    const accessToken = await jwtService.generateAccessToken(newPayload);
-    const newRefreshToken = await jwtService.generateRefreshToken(newPayload);
+      //  Create a fresh JWT payload
+      const newPayload = {
+        sub: payload.sub,
+        email: payload.email,
+      };
 
-    // Hash the new refresh token
-    const newRefreshTokenHash = tokenHashService.hash(newRefreshToken);
+      // Generate new tokens
+      const accessToken = await jwtService.generateAccessToken(newPayload);
+      const newRefreshToken = await jwtService.generateRefreshToken(newPayload);
 
-    // Store the new session
-    await sessionRepository.create({
-      userId: new Types.ObjectId(payload.sub),
-      refreshTokenHash: newRefreshTokenHash,
-      expiresAt: addDays(config.SESSION_EXPIRES_IN_DAYS),
-    });
+      // Hash the new refresh token
+      const newRefreshTokenHash = tokenHashService.hash(newRefreshToken);
 
-    // Return the new tokens
-    return {
-      accessToken,
-      refreshToken: newRefreshToken,
-    };
+      // Delete the old session (rotation)
+      await sessionRepository.deleteById(session.id, dbSession);
+
+      // Store the new session
+      await sessionRepository.create(
+        {
+          userId: new Types.ObjectId(payload.sub),
+          refreshTokenHash: newRefreshTokenHash,
+          expiresAt: addDays(config.SESSION_EXPIRES_IN_DAYS),
+        },
+        dbSession,
+      );
+
+      await dbSession.commitTransaction();
+
+      // Return the new tokens
+      return {
+        accessToken,
+        refreshToken: newRefreshToken,
+      };
+    } catch (error) {
+      await dbSession.abortTransaction();
+      throw error;
+    } finally {
+      await dbSession.endSession();
+    }
   }
 
   async logout(refreshToken: string): Promise<void> {
@@ -336,6 +349,10 @@ export class AuthService {
       await session.endSession();
     }
   }
+
+  // async refreshToken(data: RefreshTokenInput) {
+  //   const payload = await jwtService.verifyRefreshToken(data.refreshToken)
+  // }
 }
 
 export const authService = new AuthService();

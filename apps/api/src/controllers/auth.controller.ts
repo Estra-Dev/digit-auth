@@ -29,9 +29,9 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
 export const refreshToken = asyncHandler(
   async (req: Request, res: Response) => {
-    const { refreshToken } = req.body;
+    // const { refreshToken } = req.body;
 
-    const result = await authService.refreshToken(refreshToken);
+    const result = await authService.refreshToken(req.body);
 
     return ApiResponse.success(res, {
       statusCode: 200,

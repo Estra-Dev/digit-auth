@@ -1,5 +1,5 @@
-import type { ClientSession, SaveOptions } from "mongoose";
+import type { ClientSession } from "mongoose";
 
-export const withSession = (session?: ClientSession): SaveOptions => {
+export const withSession = (session?: ClientSession) => {
   return session ? { session } : {};
 };
