@@ -6,7 +6,11 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 
 export const registerMiddleware = (app: Express) => {
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: false,
+    }),
+  );
 
   app.use(
     cors({

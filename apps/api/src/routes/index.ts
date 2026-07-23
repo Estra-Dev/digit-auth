@@ -1,6 +1,7 @@
 import { type Express } from "express";
-import healthRouter from "./health.route.js";
+// import healthRouter from "./health.route.js";
 import authRouter from "./auth.route.js";
+import healthRouter from "../modules/health/health.routes.js";
 
 export const registerRoutes = (app: Express) => {
   app.get("/", (req, res) => {
@@ -15,4 +16,5 @@ export const registerRoutes = (app: Express) => {
 
   app.use("/api/v1/health", healthRouter);
   app.use("/api/v1/auth", authRouter);
+  // app.use("/api/v1/health", healthRouter);
 };

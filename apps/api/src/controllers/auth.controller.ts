@@ -4,6 +4,8 @@ import { authService } from "../services/auth.service.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { type Request, type Response } from "express";
 import { registerSchema } from "../validators/auth.validator.js";
+import { logoutSchema } from "../validators/logout.schema.js";
+import { UserMapper } from "../modules/auth/mapper/user.mapper.js";
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const body = parseRequest(registerSchema, req.body);
@@ -42,9 +44,10 @@ export const refreshToken = asyncHandler(
 );
 
 export const logout = asyncHandler(async (req: Request, res: Response) => {
-  const { refreshToken } = req.body;
+  // const { refreshToken } = req.body;
+  const body = parseRequest(logoutSchema, req.body);
 
-  await authService.logout(refreshToken);
+  await authService.logout(body);
 
   return ApiResponse.success(res, {
     statusCode: 200,
@@ -54,9 +57,10 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const logoutAll = asyncHandler(async (req: Request, res: Response) => {
-  const { refreshToken } = req.body;
+  // const { refreshToken } = req.body;
+  const body = parseRequest(logoutSchema, req.body);
 
-  await authService.logoutAll(refreshToken);
+  await authService.logoutAll(body);
 
   return ApiResponse.success(res, {
     statusCode: 200,
@@ -113,6 +117,18 @@ export const resetPassword = asyncHandler(
       statusCode: 200,
       message: "Password reset successfully.",
       data: null,
+    });
+  },
+);
+
+export const getCurrentUser = asyncHandler(
+  async (req: Request, res: Response) => {
+    // const user = await authService.getCurrentUser(req.user!.id);
+
+    return ApiResponse.success(res, {
+      statusCode: 200,
+      message: "Current user retrieved successfully.",
+      data: req.user!,
     });
   },
 );

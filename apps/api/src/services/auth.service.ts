@@ -16,6 +16,7 @@ import { logger } from "../config/logger.js";
 import { passwordResetTokenRepository } from "../modules/auth/repositories/password-reset-token.repository.js";
 import type { ResetPasswordInput } from "../validators/reset-password.schema.js";
 import type { RefreshTokenInput } from "../validators/refresh-token.schema.js";
+import type { LogoutInput } from "../validators/logout.schema.js";
 
 export class AuthService {
   async register(data: RegisterInput) {
@@ -163,22 +164,23 @@ export class AuthService {
     }
   }
 
-  async logout(refreshToken: string): Promise<void> {
-    const payload = await jwtService.verifyRefreshToken(refreshToken);
+  async logout(data: LogoutInput): Promise<void> {
+    const payload = await jwtService.verifyRefreshToken(data.refreshToken);
 
-    const refreshTokenHash = tokenHashService.hash(refreshToken);
+    const refreshTokenHash = tokenHashService.hash(data.refreshToken);
 
     const session = await sessionRepository.findByUserIdAndRefreshTokenHash(
       new Types.ObjectId(payload.sub),
       refreshTokenHash,
     );
 
-    if (session) {
-      await sessionRepository.deleteById(session.id);
+    if (!session) {
+      return;
     }
+    await sessionRepository.deleteById(session.id);
   }
-  async logoutAll(refreshToken: string): Promise<void> {
-    const payload = await jwtService.verifyRefreshToken(refreshToken);
+  async logoutAll(data: LogoutInput): Promise<void> {
+    const payload = await jwtService.verifyRefreshToken(data.refreshToken);
 
     const userId = new Types.ObjectId(payload.sub);
 
@@ -241,11 +243,13 @@ export class AuthService {
     const user = await userRepository.findByEmail(email);
 
     if (!user) {
-      throw new AppError("User not found", 404, true);
+      // throw new AppError("User not found", 404, true);
+      return;
     }
 
     if (user.emailVerified) {
-      throw new AppError("Email is already verified", 400, true);
+      // throw new AppError("Email is already verified", 400, true);
+      return;
     }
 
     await this.sendVerificationEmail(user);
@@ -352,6 +356,16 @@ export class AuthService {
 
   // async refreshToken(data: RefreshTokenInput) {
   //   const payload = await jwtService.verifyRefreshToken(data.refreshToken)
+  // }
+
+  // async getCurrentUser(userId: string) {
+  //   const user = await userRepository.findById(userId);
+
+  //   if (!user) {
+  //     throw new AppError("User not found", 404, true);
+  //   }
+
+  //   return UserMapper.toResponse(user);
   // }
 }
 
