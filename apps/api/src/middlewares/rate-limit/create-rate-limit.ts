@@ -1,4 +1,5 @@
 import { rateLimit } from "express-rate-limit";
+import { config } from "../../config/index.js";
 
 export function createRateLimit(
   windowMs: number,
@@ -8,8 +9,12 @@ export function createRateLimit(
   return rateLimit({
     windowMs,
     max,
+
     standardHeaders: true,
     legacyHeaders: false,
+
+    skip: () => config.env === "test",
+
     message: {
       success: false,
       message,

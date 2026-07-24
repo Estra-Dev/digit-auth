@@ -8,8 +8,12 @@ export const connectDatabase = async () => {
 
     logger.info("MONGODB CONNECTED");
   } catch (error) {
-    logger.error(error);
+    logger.error(error, "Failed to connect to MongoDB");
 
-    process.exit(1);
+    throw error;
   }
+};
+
+export const disconnectDatabase = async () => {
+  await mongoose.disconnect();
 };

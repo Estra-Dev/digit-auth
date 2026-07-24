@@ -6,7 +6,13 @@ export default defineConfig({
 
     environment: "node",
 
+    env: {
+      NODE_ENV: "test",
+    },
+
     include: ["src/**/*.test.ts"],
+
+    setupFiles: ["./src/tests/helpers/database.ts"],
 
     coverage: {
       provider: "v8",
