@@ -13,7 +13,7 @@ export function createRateLimit(
     standardHeaders: true,
     legacyHeaders: false,
 
-    skip: () => config.env === "test",
+    skip: () => config.isTest,
 
     message: {
       success: false,

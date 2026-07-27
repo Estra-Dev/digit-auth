@@ -19,3 +19,15 @@ export const buildRegisterPayload = (
     ...overrides,
   };
 };
+
+export const buildLoginPayload = (
+  overrides: Partial<{
+    email: string;
+    password: string;
+  }> = {},
+) => ({
+  email: "user@example.com",
+  password: "Password123@",
+
+  ...overrides,
+});

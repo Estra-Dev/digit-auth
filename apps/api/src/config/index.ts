@@ -2,18 +2,30 @@ import { env } from "./env.js";
 
 export const config = {
   env: env.NODE_ENV,
+
+  isDevelopment: env.NODE_ENV === "development",
+  isProduction: env.NODE_ENV === "production",
+  isTest: env.NODE_ENV === "test",
+
   port: env.PORT,
+
   JWT_ACCESS_SECRET: env.JWT_ACCESS_SECRET,
   JWT_REFRESH_SECRET: env.JWT_REFRESH_SECRET,
+
   JWT_ACCESS_EXPIRES_IN: env.JWT_ACCESS_EXPIRES_IN,
   JWT_REFRESH_EXPIRES_IN: env.JWT_REFRESH_EXPIRES_IN,
+
   MONGODB_URI: env.MONGODB_URI,
+
   SESSION_EXPIRES_IN_DAYS: env.SESSION_EXPIRES_IN_DAYS,
+
   RESEND_API_KEY: env.RESEND_API_KEY,
   EMAIL_FROM: env.EMAIL_FROM,
+
+  API_BASE_URL: env.API_BASE_URL,
+
   RATE_LIMIT_AUTH_MAX: 5,
   RATE_LIMIT_API_MAX: 100,
   RATE_LIMIT_REFRESH_MAX: 30,
   RATE_LIMIT_WINDOW_MINUTES: 15,
-  API_BASE_URL: env.API_BASE_URL,
 } as const;

@@ -7,6 +7,7 @@ import { VerificationToken } from "../../../modules/auth/model/verification-toke
 
 import { buildRegisterPayload } from "../../helpers/factories.js";
 import { describe, expect, it } from "vitest";
+import { config } from "../../../config/index.js";
 
 describe("POST /api/v1/auth/register", () => {
   it("should register a new user successfully", async () => {
@@ -16,6 +17,8 @@ describe("POST /api/v1/auth/register", () => {
       .post("/api/v1/auth/register")
       .send(payload);
 
+    console.log(config.env);
+    console.log(config.isTest);
     expect(response.status).toBe(201);
 
     expect(response.body.success).toBe(true);
