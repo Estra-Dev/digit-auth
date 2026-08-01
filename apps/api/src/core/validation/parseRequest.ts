@@ -12,3 +12,10 @@ export function parseRequest<T>(schema: ZodType<T>, data: unknown): T {
     throw error;
   }
 }
+
+// export function parseRequest<T>(schema: ZodType<T>, data: unknown): T {
+//   console.log("parseRequest received:");
+//   console.dir(data, { depth: null });
+
+//   return schema.parse(data);
+// }

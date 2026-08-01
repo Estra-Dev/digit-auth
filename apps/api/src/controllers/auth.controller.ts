@@ -19,7 +19,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-export const login = asyncHandler(async (req: Request, res: Response) => {
+export const login = asyncHandler(async (req, res) => {
   const result = await authService.login(req.body);
 
   return ApiResponse.success(res, {
@@ -43,11 +43,20 @@ export const refreshToken = asyncHandler(
   },
 );
 
-export const logout = asyncHandler(async (req: Request, res: Response) => {
-  // const { refreshToken } = req.body;
-  const body = parseRequest(logoutSchema, req.body);
+// export const logout = asyncHandler(async (req: Request, res: Response) => {
+//   // const { refreshToken } = req.body;
+//   const body = parseRequest(logoutSchema, req.body);
 
-  await authService.logout(body);
+//   await authService.logout(body);
+
+//   return ApiResponse.success(res, {
+//     statusCode: 200,
+//     message: "Logged Out Successfully",
+//     data: null,
+//   });
+// });
+export const logout = asyncHandler(async (req, res) => {
+  await authService.logout(req.body);
 
   return ApiResponse.success(res, {
     statusCode: 200,
@@ -58,9 +67,9 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 
 export const logoutAll = asyncHandler(async (req: Request, res: Response) => {
   // const { refreshToken } = req.body;
-  const body = parseRequest(logoutSchema, req.body);
+  // const body = parseRequest(logoutSchema, req.body);
 
-  await authService.logoutAll(body);
+  await authService.logoutAll(req.body);
 
   return ApiResponse.success(res, {
     statusCode: 200,
@@ -99,12 +108,12 @@ export const forgotPassword = asyncHandler(
   async (req: Request, res: Response) => {
     const { email } = req.body;
 
-    await authService.forgotPassword(email);
+    const result = await authService.forgotPassword(email);
 
     return ApiResponse.success(res, {
       statusCode: 200,
       message: "If an account exists, a password reset email has been sent.",
-      data: null,
+      data: result ?? null,
     });
   },
 );

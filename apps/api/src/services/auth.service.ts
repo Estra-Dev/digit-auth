@@ -2,7 +2,11 @@ import mongoose, { Types } from "mongoose";
 import { passwordService } from "./../security/password/password.service.js";
 import { AppError } from "../core/errors/AppError.js";
 import { userRepository } from "../modules/auth/repositories/user.repository.js";
-import { tokenHashService, tokenService } from "../security/index.js";
+import {
+  tokenHashService,
+  tokenService,
+  type JwtPayload,
+} from "../security/index.js";
 import { jwtService } from "../security/jwt/jwt.service.js";
 import type { RegisterInput } from "../validators/auth.validator.js";
 import type { LoginInput } from "../validators/login.schema.js";
@@ -19,36 +23,75 @@ import type { RefreshTokenInput } from "../validators/refresh-token.schema.js";
 import type { LogoutInput } from "../validators/logout.schema.js";
 
 export class AuthService {
+  // async register(data: RegisterInput) {
+  //   // check if user exist
+  //   const existingUser = await userRepository.findByEmail(data.email);
+
+  //   if (existingUser) {
+  //     throw new AppError("An Account with this email already exist", 409, true);
+  //   }
+  //   const hashedPassword = await passwordService.hash(data.password);
+  //   // const isValid = await verifyPassword(hashedPassword, data.password);
+  //   // console.log(hashedPassword, isValid);
+
+  //   // create the user
+  //   const user = await userRepository.create({
+  //     firstName: data.firstName,
+  //     lastName: data.lastName,
+  //     passwordHashed: hashedPassword,
+  //     email: data.email,
+  //   });
+
+  //   await this.sendVerificationEmail(user);
+
+  //   return UserMapper.toResponse(user);
+
+  //   // if (!config.isTest) {
+  //   //   await this.sendVerificationEmail(user);
+  //   // }
+
+  //   // return UserMapper.toResponse(user);
+
+  //   // return {
+  //   //   id: userId,
+  //   //   email: data.email,
+  //   //   hashedPassword,
+  //   //   accessToken,
+  //   //   refreshToken,
+  //   //   createdAt: new Date(),
+  //   // };
+  // }
+
   async register(data: RegisterInput) {
-    // check if user exist
+    // Check if user exists
     const existingUser = await userRepository.findByEmail(data.email);
 
     if (existingUser) {
       throw new AppError("An Account with this email already exist", 409, true);
     }
-    const hashedPassword = await passwordService.hash(data.password);
-    // const isValid = await verifyPassword(hashedPassword, data.password);
-    // console.log(hashedPassword, isValid);
 
-    // create the user
+    const hashedPassword = await passwordService.hash(data.password);
+
     const user = await userRepository.create({
       firstName: data.firstName,
       lastName: data.lastName,
-      passwordHashed: hashedPassword,
       email: data.email,
+      passwordHashed: hashedPassword,
     });
 
-    await this.sendVerificationEmail(user);
+    // Send email and capture raw token
+    const verificationToken = await this.sendVerificationEmail(user);
 
-    return UserMapper.toResponse(user);
-    // return {
-    //   id: userId,
-    //   email: data.email,
-    //   hashedPassword,
-    //   accessToken,
-    //   refreshToken,
-    //   createdAt: new Date(),
-    // };
+    const response = UserMapper.toResponse(user);
+
+    if (config.isTest) {
+      return {
+        ...response,
+        verificationToken,
+      };
+    }
+
+    return response;
   }
 
   async login(data: LoginInput) {
@@ -100,7 +143,13 @@ export class AuthService {
 
   async refreshToken(data: RefreshTokenInput) {
     // Verify the refresh token
-    const payload = await jwtService.verifyRefreshToken(data.refreshToken);
+    let payload;
+
+    try {
+      payload = await jwtService.verifyRefreshToken(data.refreshToken);
+    } catch {
+      throw new AppError("Invalid Refresh Token", 401, true);
+    }
 
     // console.log(payload);
 
@@ -124,7 +173,7 @@ export class AuthService {
       dbSession.startTransaction();
 
       //  Create a fresh JWT payload
-      const newPayload = {
+      const newPayload: JwtPayload = {
         sub: payload.sub,
         email: payload.email,
       };
@@ -165,7 +214,13 @@ export class AuthService {
   }
 
   async logout(data: LogoutInput): Promise<void> {
-    const payload = await jwtService.verifyRefreshToken(data.refreshToken);
+    let payload;
+
+    try {
+      payload = await jwtService.verifyRefreshToken(data.refreshToken);
+    } catch {
+      throw new AppError("Invalid Refresh Token", 401, true);
+    }
 
     const refreshTokenHash = tokenHashService.hash(data.refreshToken);
 
@@ -180,7 +235,13 @@ export class AuthService {
     await sessionRepository.deleteById(session.id);
   }
   async logoutAll(data: LogoutInput): Promise<void> {
-    const payload = await jwtService.verifyRefreshToken(data.refreshToken);
+    let payload;
+
+    try {
+      payload = await jwtService.verifyRefreshToken(data.refreshToken);
+    } catch {
+      throw new AppError("Invalid Refresh Token", 401, true);
+    }
 
     const userId = new Types.ObjectId(payload.sub);
 
@@ -206,15 +267,50 @@ export class AuthService {
     await verificationTokenRepository.deleteById(verificationToken.id);
   }
 
+  // private async sendVerificationEmail(user: {
+  //   _id: Types.ObjectId;
+  //   firstName: string;
+  //   email: string;
+  // }) {
+  //   const verificationToken = tokenService.generateVerificationToken();
+  //   const verificationTokenHash = tokenHashService.hash(verificationToken);
+
+  //   await verificationTokenRepository.deleteByUserId(user._id);
+  //   await verificationTokenRepository.create({
+  //     userId: user._id,
+  //     tokenHash: verificationTokenHash,
+  //     expiresAt: addDays(1),
+  //   });
+
+  //   try {
+  //     await emailService.sendVerificationEmail({
+  //       email: user.email,
+  //       firstName: user.firstName,
+  //       verificationToken,
+  //     });
+  //   } catch (error) {
+  //     logger.error(
+  //       {
+  //         error,
+  //         userId: user._id.toString(),
+  //         email: user.email,
+  //       },
+  //       "Failed to send verification token",
+  //     );
+  //   }
+  // }
+
   private async sendVerificationEmail(user: {
     _id: Types.ObjectId;
     firstName: string;
     email: string;
-  }) {
+  }): Promise<string> {
     const verificationToken = tokenService.generateVerificationToken();
+
     const verificationTokenHash = tokenHashService.hash(verificationToken);
 
     await verificationTokenRepository.deleteByUserId(user._id);
+
     await verificationTokenRepository.create({
       userId: user._id,
       tokenHash: verificationTokenHash,
@@ -237,6 +333,9 @@ export class AuthService {
         "Failed to send verification token",
       );
     }
+
+    // IMPORTANT
+    return verificationToken;
   }
 
   async resendVerificationEmail(email: string): Promise<void> {
@@ -259,7 +358,7 @@ export class AuthService {
     _id: Types.ObjectId;
     firstName: string;
     email: string;
-  }): Promise<void> {
+  }): Promise<string> {
     // Generate raw token
     const resetToken = tokenService.generatePasswordResetToken();
 
@@ -292,14 +391,31 @@ export class AuthService {
         "Failed to send password resend email",
       );
     }
+
+    return resetToken;
   }
 
-  async forgotPassword(email: string): Promise<void> {
+  async forgotPassword(email: string) {
     const user = await userRepository.findByEmail(email);
 
-    if (!user) return;
+    if (!user) {
+      return config.isTest ? { resetToken: null } : undefined;
+    }
 
-    await this.sendPasswordResetEmail(user);
+    const resetToken = await this.sendPasswordResetEmail(user);
+
+    if (config.isTest) {
+      return {
+        resetToken,
+      };
+    }
+
+    console.log({
+      isTest: config.isTest,
+      env: config.env,
+    });
+
+    return;
   }
 
   async resetPassword(data: ResetPasswordInput): Promise<void> {
@@ -353,20 +469,6 @@ export class AuthService {
       await session.endSession();
     }
   }
-
-  // async refreshToken(data: RefreshTokenInput) {
-  //   const payload = await jwtService.verifyRefreshToken(data.refreshToken)
-  // }
-
-  // async getCurrentUser(userId: string) {
-  //   const user = await userRepository.findById(userId);
-
-  //   if (!user) {
-  //     throw new AppError("User not found", 404, true);
-  //   }
-
-  //   return UserMapper.toResponse(user);
-  // }
 }
 
 export const authService = new AuthService();

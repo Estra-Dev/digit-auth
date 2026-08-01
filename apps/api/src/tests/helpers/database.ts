@@ -13,7 +13,9 @@ afterEach(async () => {
   const collections = Object.values(mongoose.connection.collections);
 
   for (const collection of collections) {
-    await collection.deleteMany({});
+    if (collection) {
+      await collection.deleteMany({});
+    }
   }
 });
 

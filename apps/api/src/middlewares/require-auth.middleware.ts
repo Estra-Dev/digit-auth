@@ -22,7 +22,13 @@ export async function requireAuth(
     throw new AppError("Invalid authorization header.", 401, true);
   }
 
-  const payload = await jwtService.verifyAccessToken(token);
+  let payload;
+
+  try {
+    payload = await jwtService.verifyAccessToken(token);
+  } catch {
+    throw new AppError("Invalid or expired access token.", 401, true);
+  }
 
   const user = await userRepository.findById(payload.sub);
 

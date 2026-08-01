@@ -5,6 +5,7 @@ export const jwtPayloadSchema = z.object({
   sub: z
     .string()
     .refine((id) => Types.ObjectId.isValid(id), "Invalid ObjectId"),
+
   email: z.email(),
 });
 

@@ -21,6 +21,7 @@ import { requireAuth } from "../middlewares/require-auth.middleware.js";
 import { authRateLimit } from "../middlewares/rate-limit/auth-rate-limit.js";
 import { refreshTokenLimiter } from "../middlewares/rate-limit/refresh-rate-limit.js";
 import { apiRateLimit } from "../middlewares/rate-limit/api-rate-limit.js";
+import { logoutSchema } from "../validators/logout.schema.js";
 
 const authRouter = Router();
 
@@ -32,8 +33,8 @@ authRouter.post(
   validate(refreshTokenSchema),
   refreshToken,
 );
-authRouter.post("/logout", logout);
-authRouter.post("/logout-all", logoutAll);
+authRouter.post("/logout", validate(logoutSchema), logout);
+authRouter.post("/logout-all", validate(logoutSchema), logoutAll);
 authRouter.post("/verify-email", verifyEmail);
 authRouter.post(
   "/resend-verification-email",

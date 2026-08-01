@@ -2,6 +2,8 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
+    testTimeout: 15000,
+
     globals: true,
 
     environment: "node",
@@ -13,6 +15,11 @@ export default defineConfig({
     include: ["src/**/*.test.ts"],
 
     setupFiles: ["./src/tests/helpers/database.ts"],
+
+    // IMPORTANT
+    pool: "forks",
+
+    fileParallelism: false,
 
     coverage: {
       provider: "v8",

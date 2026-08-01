@@ -1,6 +1,7 @@
 import { jwtVerify, SignJWT } from "jose";
 import { config } from "../../config/index.js";
 import { jwtPayloadSchema, type JwtPayload } from "./jwt.schema.js";
+import crypto from "node:crypto";
 
 const encoder = new TextEncoder();
 
@@ -24,6 +25,7 @@ export class JwtService {
       .setProtectedHeader({
         alg: "HS256",
       })
+      .setJti(crypto.randomUUID())
       .setIssuedAt()
       .setExpirationTime(config.JWT_REFRESH_EXPIRES_IN)
       .sign(refreshSecret);

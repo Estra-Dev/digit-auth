@@ -1,4 +1,5 @@
 import argon2 from "argon2";
+import { config } from "../../config/index.js";
 
 // export const hashPassword = async (password: string): Promise<string> => {
 //   return argon2.hash(password, {
@@ -18,7 +19,15 @@ import argon2 from "argon2";
 
 export class PasswordService {
   async hash(password: string): Promise<string> {
-    return argon2.hash(password);
+    return argon2.hash(password, {
+      type: argon2.argon2id,
+
+      memoryCost: config.isTest ? 1024 : 65536,
+
+      timeCost: config.isTest ? 1 : 3,
+
+      parallelism: 1,
+    });
   }
 
   async verify(hash: string, password: string): Promise<boolean> {
