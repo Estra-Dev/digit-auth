@@ -122,7 +122,7 @@ export class SessionRepository {
     return Session.findOne({
       userId,
       refreshTokenHash,
-    });
+    }).select("+refreshTokenHash");
   }
 
   async findByIdForUser(
