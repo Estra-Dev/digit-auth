@@ -16,10 +16,9 @@ export class UserMapper {
     };
   }
 
-  static toAuthenticatedUser(user: AuthenticatedUser) {
+  static toAuthenticatedUser(user: UserDocument): AuthenticatedUser {
     return {
       id: user.id,
-
       email: user.email,
 
       firstName: user.firstName,
@@ -29,6 +28,9 @@ export class UserMapper {
       status: user.status,
 
       emailVerified: user.emailVerified,
+
+      failedLoginAttempts: user.failedLoginAttempts,
+      lockedUntil: user.lockedUntil ?? null,
     };
   }
 }

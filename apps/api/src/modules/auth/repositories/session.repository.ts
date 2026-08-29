@@ -51,6 +51,28 @@ export class SessionRepository {
     await Session.deleteMany({ userId });
   }
 
+  async deleteOthers(
+    userId: Types.ObjectId,
+    currentSessionId: string,
+  ): Promise<void> {
+    await Session.deleteMany({
+      userId,
+      _id: { $ne: currentSessionId },
+    });
+  }
+
+  async belongsToUser(
+    sessionId: string,
+    userId: Types.ObjectId,
+  ): Promise<boolean> {
+    const session = await Session.exists({
+      _id: sessionId,
+      userId,
+    });
+
+    return !!session;
+  }
+
   // Update last used time
   async updateLastUsed(
     sessionId: string,
@@ -91,6 +113,38 @@ export class SessionRepository {
     return Session.findOne({
       refreshTokenHash,
     }).select("+refreshTokenHash");
+  }
+
+  async findCurrentSession(
+    userId: Types.ObjectId,
+    refreshTokenHash: string,
+  ): Promise<SessionDocument | null> {
+    return Session.findOne({
+      userId,
+      refreshTokenHash,
+    });
+  }
+
+  async findByIdForUser(
+    sessionId: string,
+    userId: Types.ObjectId,
+  ): Promise<SessionDocument | null> {
+    return Session.findOne({
+      _id: sessionId,
+      userId,
+    }).select("+refreshTokenHash");
+  }
+
+  async findByUserIdWithDetails(
+    userId: Types.ObjectId,
+  ): Promise<SessionDocument[]> {
+    return Session.find({
+      userId,
+    })
+      .select("-refreshTokenHash")
+      .sort({
+        createdAt: -1,
+      });
   }
 }
 

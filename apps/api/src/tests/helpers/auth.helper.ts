@@ -36,3 +36,10 @@ export async function createVerifiedUser(
     email: payload.email,
   };
 }
+
+export {
+  createUser,
+  createAdminUser,
+  createInactiveUser,
+  createUnverifiedUser,
+} from "./user.factory.js";

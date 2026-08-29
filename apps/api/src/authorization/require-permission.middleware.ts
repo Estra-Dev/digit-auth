@@ -1,7 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
 import type { Permission } from "./permissions.js";
 import { AppError } from "../core/errors/AppError.js";
-import { RolePermissions } from "./roles.js";
+import { RolePermissions } from "./role-permissions.js";
+// import { RolePermissions } from "./roles.js";
 
 export function requirePermission(permission: Permission) {
   return (req: Request, _res: Response, next: NextFunction) => {
@@ -10,9 +11,15 @@ export function requirePermission(permission: Permission) {
     }
 
     const permissions = RolePermissions[req.user.role];
+
+    if (!permissions) {
+      throw new AppError("Forbidden", 403, true);
+    }
+
     if (!permissions.includes(permission)) {
       throw new AppError("Forbidden", 403, true);
     }
+
     next();
   };
 }

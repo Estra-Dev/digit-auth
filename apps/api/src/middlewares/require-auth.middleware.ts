@@ -30,6 +30,10 @@ export async function requireAuth(
     throw new AppError("Invalid or expired access token.", 401, true);
   }
 
+  if (!payload.sub) {
+    throw new AppError("Invalid access token.", 401, true);
+  }
+
   const user = await userRepository.findById(payload.sub);
 
   if (!user) {

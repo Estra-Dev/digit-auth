@@ -54,11 +54,13 @@ export function validate<T>(schema: ZodType<T>): RequestHandler {
       console.log("VALIDATION ERROR:");
       console.dir(result.error.flatten(), { depth: null });
 
-      return ApiResponse.error(res, {
+      ApiResponse.error(res, {
         statusCode: 400,
         message: "Validation Failed",
         errors: result.error.flatten(),
       });
+
+      return;
     }
 
     console.log("PARSED:");
@@ -69,3 +71,36 @@ export function validate<T>(schema: ZodType<T>): RequestHandler {
     next();
   };
 }
+// import type { ZodType } from "zod";
+
+// import type { Request, Response, NextFunction, RequestHandler } from "express";
+
+// import { ApiResponse } from "../core/response/ApiResponse.js";
+
+// export function validate<T>(schema: ZodType<T>): RequestHandler {
+//   return (req: Request, res: Response, next: NextFunction): void => {
+//     const result = schema.safeParse({
+//       body: req.body,
+//       params: req.params,
+//       query: req.query,
+//     });
+
+//     if (!result.success) {
+//       ApiResponse.error(res, {
+//         statusCode: 400,
+//         message: "Validation Failed",
+//         errors: result.error.flatten(),
+//       });
+
+//       return;
+//     }
+
+//     req.body = (
+//       result.data as {
+//         body: unknown;
+//       }
+//     ).body;
+
+//     next();
+//   };
+// }

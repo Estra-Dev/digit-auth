@@ -1,4 +1,5 @@
-import type { UserRole, UserStatus } from "../modules/auth/model/user.model.js";
+import type { UserRole } from "../authorization/roles.js";
+import type { UserStatus } from "../modules/auth/model/user.model.js";
 
 export interface AuthenticatedUser {
   id: string;
@@ -11,4 +12,8 @@ export interface AuthenticatedUser {
   status: UserStatus;
 
   emailVerified: boolean;
+
+  failedLoginAttempts: number;
+
+  lockedUntil?: Date | null;
 }

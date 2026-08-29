@@ -6,6 +6,11 @@ import { type Request, type Response } from "express";
 import { registerSchema } from "../validators/auth.validator.js";
 import { logoutSchema } from "../validators/logout.schema.js";
 import { UserMapper } from "../modules/auth/mapper/user.mapper.js";
+import { verifyEmailSchema } from "../validators/verify-email.schema.js";
+
+type SessionParams = {
+  id: string;
+};
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const body = parseRequest(registerSchema, req.body);
@@ -19,7 +24,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-export const login = asyncHandler(async (req, res) => {
+export const login = asyncHandler(async (req: Request, res) => {
   const result = await authService.login(req.body);
 
   return ApiResponse.success(res, {
@@ -55,7 +60,7 @@ export const refreshToken = asyncHandler(
 //     data: null,
 //   });
 // });
-export const logout = asyncHandler(async (req, res) => {
+export const logout = asyncHandler(async (req: Request, res: Response) => {
   await authService.logout(req.body);
 
   return ApiResponse.success(res, {
@@ -79,9 +84,9 @@ export const logoutAll = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
-  const { token } = req.body;
+  const body = parseRequest(verifyEmailSchema, req.body);
 
-  await authService.verifyEmail(token);
+  await authService.verifyEmail(body.token);
 
   return ApiResponse.success(res, {
     statusCode: 200,
@@ -141,3 +146,37 @@ export const getCurrentUser = asyncHandler(
     });
   },
 );
+
+export const getMySessions = asyncHandler(async (req, res) => {
+  const sessions = await authService.getMySessions(req.user!.id);
+
+  return ApiResponse.success(res, {
+    statusCode: 200,
+    message: "Sessions retrieved successfully.",
+    data: sessions,
+  });
+});
+
+export const revokeSession = asyncHandler(
+  async (req: Request<SessionParams>, res) => {
+    await authService.revokeSession(req.user!.id, req.params.id);
+
+    return ApiResponse.success(res, {
+      statusCode: 200,
+      message: "Session revoked successfully.",
+      data: null,
+    });
+  },
+);
+
+export const revokeOtherSessions = asyncHandler(async (req, res) => {
+  const parsed = parseRequest(logoutSchema, req.body);
+
+  await authService.revokeOtherSessions(req.user!.id, parsed.body.refreshToken);
+
+  return ApiResponse.success(res, {
+    statusCode: 200,
+    message: "Other sessions revoked successfully.",
+    data: null,
+  });
+});

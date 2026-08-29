@@ -3,6 +3,9 @@ import { type Express } from "express";
 import authRouter from "./auth.route.js";
 import healthRouter from "../modules/health/health.routes.js";
 import testRoutes from "./test.routes.js";
+import securityRouter from "../modules/security/security.routes.js";
+import profileRouter from "../modules/profile/profile.routes.js";
+import adminRouter from "../modules/admin/routes/admin.routes.js";
 
 export const registerRoutes = (app: Express) => {
   app.get("/", (req, res) => {
@@ -18,5 +21,8 @@ export const registerRoutes = (app: Express) => {
   app.use("/api/v1/health", healthRouter);
   app.use("/api/v1/auth", authRouter);
   app.use("/api/v1/test", testRoutes);
+  app.use("/api/v1/security", securityRouter);
+  app.use("/api/v1/profile", profileRouter);
+  app.use("/api/v1/admin", adminRouter);
   // app.use("/api/v1/health", healthRouter);
 };

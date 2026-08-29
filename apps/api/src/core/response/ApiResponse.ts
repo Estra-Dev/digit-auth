@@ -1,16 +1,20 @@
-import { type Response } from "express";
+import type { Response } from "express";
 
-interface SuccessResponse<T> {
+export interface SuccessResponse<T> {
   success: true;
   message: string;
+  timestamp: string;
   data?: T;
 }
 
-interface ErrorResponse {
+export interface ErrorResponse {
   success: false;
   message: string;
-  errors: unknown;
+  timestamp: string;
+  errors?: unknown;
 }
+
+export type ApiResponseData<T> = SuccessResponse<T> | ErrorResponse;
 
 export class ApiResponse {
   static success<T>(
@@ -21,15 +25,14 @@ export class ApiResponse {
       data?: T;
     },
   ) {
-    const response: Record<string, unknown> = {
+    const response: SuccessResponse<T> = {
       success: true,
       message: options.message,
       timestamp: new Date().toISOString(),
+      ...(options.data !== undefined && {
+        data: options.data,
+      }),
     };
-
-    if (options.data !== undefined) {
-      response.data = options.data;
-    }
 
     return res.status(options.statusCode ?? 200).json(response);
   }
@@ -42,15 +45,14 @@ export class ApiResponse {
       errors?: unknown;
     },
   ) {
-    const response: Record<string, unknown> = {
+    const response: ErrorResponse = {
       success: false,
       message: options.message,
       timestamp: new Date().toISOString(),
+      ...(options.errors !== undefined && {
+        errors: options.errors,
+      }),
     };
-
-    if (options.errors !== undefined) {
-      response.errors = options.errors;
-    }
 
     return res.status(options.statusCode ?? 500).json(response);
   }

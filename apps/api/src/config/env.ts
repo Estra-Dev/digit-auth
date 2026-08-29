@@ -7,6 +7,7 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
+
   PORT: z.coerce.number().default(5000),
 
   JWT_ACCESS_SECRET: z.string().min(32),
@@ -21,7 +22,10 @@ const envSchema = z.object({
 
   RESEND_API_KEY: z.string().min(1),
   EMAIL_FROM: z.string().min(1),
+
   API_BASE_URL: z.url(),
+
+  CORS_ORIGIN: z.url(),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
@@ -29,7 +33,6 @@ const parsedEnv = envSchema.safeParse(process.env);
 if (!parsedEnv.success) {
   console.log(parsedEnv.error.flatten().fieldErrors);
   console.log("INVALID ENVIRONMENT VARIABLE");
-
   process.exit(1);
 }
 

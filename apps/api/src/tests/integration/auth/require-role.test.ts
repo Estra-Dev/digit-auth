@@ -7,7 +7,8 @@ import {
   buildRegisterPayload,
 } from "../../helpers/factories.js";
 
-import { User, UserRole } from "../../../modules/auth/model/user.model.js";
+import { User } from "../../../modules/auth/model/user.model.js";
+import { UserRole } from "../../../authorization/roles.js";
 
 describe("Authorization (Role Middleware)", () => {
   async function createUserAndLogin(role: UserRole = UserRole.USER) {

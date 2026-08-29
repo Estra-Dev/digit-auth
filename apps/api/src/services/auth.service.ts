@@ -1,23 +1,41 @@
 import mongoose, { Types } from "mongoose";
-import { passwordService } from "./../security/password/password.service.js";
+
 import { AppError } from "../core/errors/AppError.js";
-import { userRepository } from "../modules/auth/repositories/user.repository.js";
+import { config } from "../config/index.js";
+import {
+  MAX_LOGIN_ATTEMPTS,
+  ACCOUNT_LOCK_MINUTES,
+} from "../config/security.js";
+import { logger } from "../config/logger.js";
+
+import { passwordService } from "../security/password/password.service.js";
 import {
   tokenHashService,
   tokenService,
   type JwtPayload,
 } from "../security/index.js";
 import { jwtService } from "../security/jwt/jwt.service.js";
+
+import { userRepository } from "../modules/auth/repositories/user.repository.js";
+import { sessionRepository } from "../modules/auth/repositories/session.repository.js";
+import { verificationTokenRepository } from "../modules/auth/repositories/verification-token.repository.js";
+import { passwordResetTokenRepository } from "../modules/auth/repositories/password-reset-token.repository.js";
+
+import { UserMapper } from "../modules/auth/mapper/user.mapper.js";
+import { SessionMapper } from "../modules/auth/mapper/session.mapper.js";
+
+import { emailService } from "../modules/email/index.js";
+
+import { auditService } from "../modules/audit/services/audit.service.js";
+import { AuditEvent } from "../modules/audit/types/audit-event.js";
+
+import { securityEventService } from "../modules/security/services/security-event.service.js";
+import { SecurityEvent } from "../modules/security/types/security-event.js";
+
+import { addDays, addMinutes } from "../shared/utils/date.js";
+
 import type { RegisterInput } from "../validators/auth.validator.js";
 import type { LoginInput } from "../validators/login.schema.js";
-import { UserMapper } from "../modules/auth/mapper/user.mapper.js";
-import { sessionRepository } from "../modules/auth/repositories/session.repository.js";
-import { addDays } from "../shared/utils/date.js";
-import { config } from "../config/index.js";
-import { verificationTokenRepository } from "../modules/auth/repositories/verification-token.repository.js";
-import { emailService } from "../modules/email/index.js";
-import { logger } from "../config/logger.js";
-import { passwordResetTokenRepository } from "../modules/auth/repositories/password-reset-token.repository.js";
 import type { ResetPasswordInput } from "../validators/reset-password.schema.js";
 import type { RefreshTokenInput } from "../validators/refresh-token.schema.js";
 import type { LogoutInput } from "../validators/logout.schema.js";
@@ -100,13 +118,68 @@ export class AuthService {
       throw new AppError("Invalid Email or Password", 401, true);
     }
 
+    if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
+      throw new AppError(
+        "Account temporarily locked. Please try again later.",
+        423,
+        true,
+      );
+    }
+
     const validPassword = await passwordService.verify(
       user.passwordHashed,
       data.password,
     );
     if (!validPassword) {
+      await userRepository.incrementFailedLoginAttempts(user.id);
+
+      await securityEventService.log({
+        userId: user.id,
+        event: SecurityEvent.LOGIN_FAILED,
+      });
+
+      const attempts = await userRepository.getFailedAttempts(user.id);
+
+      // if (attempts >= MAX_LOGIN_ATTEMPTS) {
+      //   await userRepository.lockAccount(
+      //     user.id,
+      //     addMinutes(ACCOUNT_LOCK_MINUTES),
+      //   );
+
+      //   throw new AppError(
+      //     "Account locked due to too many failed login attempts.",
+      //     423,
+      //     true,
+      //   );
+      // }
+
+      if (attempts >= MAX_LOGIN_ATTEMPTS) {
+        await userRepository.lockAccount(
+          user.id,
+          addMinutes(ACCOUNT_LOCK_MINUTES),
+        );
+
+        await securityEventService.log({
+          userId: user.id,
+          event: SecurityEvent.ACCOUNT_LOCKED,
+          metadata: {
+            reason: "MAX_LOGIN_ATTEMPTS_EXCEEDED",
+            attempts,
+          },
+        });
+
+        throw new AppError(
+          "Account locked due to too many failed login attempts.",
+          423,
+          true,
+        );
+      }
+
       throw new AppError("Invalid Email or Password", 401, true);
     }
+
+    await userRepository.resetFailedLoginAttempts(user.id);
+
     if (!user.emailVerified) {
       throw new AppError(
         "Please verify your email before logging in",
@@ -134,6 +207,16 @@ export class AuthService {
       expiresAt: addDays(config.SESSION_EXPIRES_IN_DAYS),
     });
 
+    await auditService.log({
+      userId: user.id,
+      event: AuditEvent.LOGIN,
+    });
+
+    await securityEventService.log({
+      userId: user.id,
+      event: SecurityEvent.LOGIN_SUCCESS,
+    });
+
     return {
       user: UserMapper.toResponse(user),
       accessToken,
@@ -157,14 +240,31 @@ export class AuthService {
     const refreshTokenHash = tokenHashService.hash(data.refreshToken);
 
     // Find the matching session
+    // const session = await sessionRepository.findByUserIdAndRefreshTokenHash(
+    //   new Types.ObjectId(payload.sub),
+    //   refreshTokenHash,
+    // );
+
+    // // Reject if no active session exists
+    // if (!session) {
+    //   throw new AppError("Invalid Refresh Token", 401, true);
+    // }
+
+    const userId = new Types.ObjectId(payload.sub);
+
     const session = await sessionRepository.findByUserIdAndRefreshTokenHash(
-      new Types.ObjectId(payload.sub),
+      userId,
       refreshTokenHash,
     );
 
-    // Reject if no active session exists
     if (!session) {
-      throw new AppError("Invalid Refresh Token", 401, true);
+      // await sessionRepository.deleteAllForUser(userId);
+
+      throw new AppError(
+        "Refresh token reuse detected. Please login again.",
+        401,
+        true,
+      );
     }
 
     const dbSession = await mongoose.startSession();
@@ -198,6 +298,11 @@ export class AuthService {
         dbSession,
       );
 
+      await securityEventService.log({
+        userId: payload.sub,
+        event: SecurityEvent.TOKEN_REFRESHED,
+      });
+
       await dbSession.commitTransaction();
 
       // Return the new tokens
@@ -211,6 +316,14 @@ export class AuthService {
     } finally {
       await dbSession.endSession();
     }
+  }
+
+  async getMySessions(userId: string) {
+    const sessions = await sessionRepository.findByUserId(
+      new Types.ObjectId(userId),
+    );
+
+    return sessions.map(SessionMapper.toResponse);
   }
 
   async logout(data: LogoutInput): Promise<void> {
@@ -233,6 +346,10 @@ export class AuthService {
       return;
     }
     await sessionRepository.deleteById(session.id);
+    await securityEventService.log({
+      userId: payload.sub,
+      event: SecurityEvent.LOGOUT,
+    });
   }
   async logoutAll(data: LogoutInput): Promise<void> {
     let payload;
@@ -246,13 +363,39 @@ export class AuthService {
     const userId = new Types.ObjectId(payload.sub);
 
     await sessionRepository.deleteAllForUser(userId);
+
+    await securityEventService.log({
+      userId: payload.sub,
+      event: SecurityEvent.LOGOUT_ALL,
+    });
   }
+  // async verifyEmail(token: string): Promise<void> {
+  //   // Hash incoming token
+  //   const tokenHash = tokenHashService.hash(token);
+
+  //   // Find verification token
+  //   const verificationToken =
+  //     await verificationTokenRepository.findByTokenHash(tokenHash);
+
+  //   if (!verificationToken) {
+  //     throw new AppError("Invalid verification Token", 400, true);
+  //   }
+
+  //   // Mark user as verified
+  //   await userRepository.verifyUser(verificationToken.userId);
+
+  //   // Delete token
+  //   await verificationTokenRepository.deleteById(verificationToken.id);
+
+  //   // await securityEventService.log({
+  //   //   userId: userId,
+  //   //   event: SecurityEvent.EMAIL_VERIFIED,
+  //   // });
+  // }
 
   async verifyEmail(token: string): Promise<void> {
-    // Hash incoming token
     const tokenHash = tokenHashService.hash(token);
 
-    // Find verification token
     const verificationToken =
       await verificationTokenRepository.findByTokenHash(tokenHash);
 
@@ -260,11 +403,14 @@ export class AuthService {
       throw new AppError("Invalid verification Token", 400, true);
     }
 
-    // Mark user as verified
     await userRepository.verifyUser(verificationToken.userId);
 
-    // Delete token
     await verificationTokenRepository.deleteById(verificationToken.id);
+
+    await securityEventService.log({
+      userId: verificationToken.userId.toString(),
+      event: SecurityEvent.EMAIL_VERIFIED,
+    });
   }
 
   // private async sendVerificationEmail(user: {
@@ -395,6 +541,29 @@ export class AuthService {
     return resetToken;
   }
 
+  // async forgotPassword(email: string) {
+  //   const user = await userRepository.findByEmail(email);
+
+  //   if (!user) {
+  //     return config.isTest ? { resetToken: null } : undefined;
+  //   }
+
+  //   const resetToken = await this.sendPasswordResetEmail(user);
+
+  //   if (config.isTest) {
+  //     return {
+  //       resetToken,
+  //     };
+  //   }
+
+  //   console.log({
+  //     isTest: config.isTest,
+  //     env: config.env,
+  //   });
+
+  //   return;
+  // }
+
   async forgotPassword(email: string) {
     const user = await userRepository.findByEmail(email);
 
@@ -404,18 +573,96 @@ export class AuthService {
 
     const resetToken = await this.sendPasswordResetEmail(user);
 
+    await securityEventService.log({
+      userId: user.id,
+      event: SecurityEvent.PASSWORD_RESET_REQUESTED,
+    });
+
     if (config.isTest) {
       return {
         resetToken,
       };
     }
 
-    console.log({
-      isTest: config.isTest,
-      env: config.env,
-    });
-
     return;
+  }
+
+  async revokeSession(userId: string, sessionId: string) {
+    const owner = await sessionRepository.belongsToUser(
+      sessionId,
+      new Types.ObjectId(userId),
+    );
+
+    if (!owner) {
+      throw new AppError("Session not found", 404, true);
+    }
+
+    await sessionRepository.deleteById(sessionId);
+
+    await securityEventService.log({
+      userId,
+      event: SecurityEvent.SESSION_REVOKED,
+      metadata: {
+        sessionId,
+      },
+    });
+  }
+
+  // async revokeOtherSessions(userId: string, refreshToken: string) {
+  //   let payload;
+
+  //   try {
+  //     payload = await jwtService.verifyRefreshToken(refreshToken);
+  //   } catch {
+  //     throw new AppError("Invalid Refresh Token", 401, true);
+  //   }
+
+  //   const hash = tokenHashService.hash(refreshToken);
+
+  //   const session = await sessionRepository.findByUserIdAndRefreshTokenHash(
+  //     new Types.ObjectId(payload.sub),
+  //     hash,
+  //   );
+
+  //   if (!session) {
+  //     throw new AppError("Invalid Refresh Token", 401, true);
+  //   }
+
+  //   await sessionRepository.deleteOthers(
+  //     new Types.ObjectId(userId),
+  //     session.id,
+  //   );
+  // }
+
+  async revokeOtherSessions(userId: string, refreshToken: string) {
+    let payload;
+
+    try {
+      payload = await jwtService.verifyRefreshToken(refreshToken);
+    } catch {
+      throw new AppError("Invalid Refresh Token", 401, true);
+    }
+
+    const hash = tokenHashService.hash(refreshToken);
+
+    const session = await sessionRepository.findByUserIdAndRefreshTokenHash(
+      new Types.ObjectId(payload.sub),
+      hash,
+    );
+
+    if (!session) {
+      throw new AppError("Invalid Refresh Token", 401, true);
+    }
+
+    await sessionRepository.deleteOthers(
+      new Types.ObjectId(userId),
+      session.id,
+    );
+
+    await securityEventService.log({
+      userId,
+      event: SecurityEvent.OTHER_SESSIONS_REVOKED,
+    });
   }
 
   async resetPassword(data: ResetPasswordInput): Promise<void> {
@@ -456,6 +703,11 @@ export class AuthService {
         passwordResetToken.id,
         session,
       );
+
+      await securityEventService.log({
+        userId: user.id,
+        event: SecurityEvent.PASSWORD_CHANGED,
+      });
 
       // Delete ALL sessions
       await sessionRepository.deleteByUserId(user._id, session);

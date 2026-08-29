@@ -1,4 +1,3 @@
-import { rateLimit } from "express-rate-limit";
 import { config } from "../../config/index.js";
 import { createRateLimit } from "./create-rate-limit.js";
 

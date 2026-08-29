@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   forgotPassword,
   getCurrentUser,
+  getMySessions,
   login,
   logout,
   logoutAll,
@@ -9,6 +10,8 @@ import {
   register,
   resendVerificationEmail,
   resetPassword,
+  revokeOtherSessions,
+  revokeSession,
   verifyEmail,
 } from "../controllers/auth.controller.js";
 import { validate } from "../middlewares/validate.middleware.js";
@@ -18,6 +21,7 @@ import { forgotPasswordSchema } from "../validators/forgot-password.schema.js";
 import { resetPasswordSchema } from "../validators/reset-password.schema.js";
 import { refreshTokenSchema } from "../validators/refresh-token.schema.js";
 import { requireAuth } from "../middlewares/require-auth.middleware.js";
+import { requireActiveUser } from "../middlewares/require-active-user.middleware.js";
 import { authRateLimit } from "../middlewares/rate-limit/auth-rate-limit.js";
 import { refreshTokenLimiter } from "../middlewares/rate-limit/refresh-rate-limit.js";
 import { apiRateLimit } from "../middlewares/rate-limit/api-rate-limit.js";
@@ -53,6 +57,15 @@ authRouter.post(
   validate(resetPasswordSchema),
   resetPassword,
 );
-authRouter.get("/me", apiRateLimit, requireAuth, getCurrentUser);
+authRouter.get("/me", requireAuth, requireActiveUser, getCurrentUser);
+authRouter.get("/sessions", requireAuth, getMySessions);
 
+authRouter.delete("/sessions/:id", requireAuth, revokeSession);
+
+authRouter.delete(
+  "/sessions",
+  requireAuth,
+  validate(logoutSchema),
+  revokeOtherSessions,
+);
 export default authRouter;

@@ -96,25 +96,20 @@
  *   schemas:
  *
  *     LoginResponse:
-          type: object
-
-          properties:
-
-            user:
-
-              $ref: '#/components/schemas/User'
-
-            accessToken:
-
-              type: string
-
-              example: eyJhbGciOiJIUzI1Ni...
-
-            refreshToken:
-
-              type: string
-
-              example: eyJhbGciOiJIUzI1Ni...
+ *       type: object
+ *       properties:
+ *         user:
+ *           $ref: '#/components/schemas/User'
+ *
+ *         accessToken:
+ *           type: string
+ *           description: JWT access token.
+ *           example: eyJhbGciOiJIUzI1Ni...
+ *
+ *         refreshToken:
+ *           type: string
+ *           description: JWT refresh token.
+ *           example: eyJhbGciOiJIUzI1Ni...
  */
 
 /**
@@ -257,5 +252,95 @@
  *           type: string
  *           format: password
  *           example: NewPassword123!
+ */
+
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *
+ *     UpdateProfileRequest:
+ *       type: object
+ *       properties:
+ *         firstName:
+ *           type: string
+ *           example: Dominion
+ *
+ *         lastName:
+ *           type: string
+ *           example: Ikonwa
+ *
+ *
+ *     ChangePasswordRequest:
+ *       type: object
+ *       required:
+ *         - currentPassword
+ *         - newPassword
+ *
+ *       properties:
+ *         currentPassword:
+ *           type: string
+ *           format: password
+ *           example: Password123!
+ *
+ *         newPassword:
+ *           type: string
+ *           format: password
+ *           example: NewPassword123!
+ */
+
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *
+ *     SecurityEvent:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *           example: 6878dc30c8db8dc4d4b35b10
+ *
+ *         userId:
+ *           type: string
+ *           example: 6878dc30c8db8dc4d4b35b10
+ *
+ *         event:
+ *           type: string
+ *           enum:
+ *             - LOGIN_SUCCESS
+ *             - LOGIN_FAILED
+ *             - PASSWORD_RESET_REQUESTED
+ *             - PASSWORD_CHANGED
+ *             - EMAIL_VERIFIED
+ *             - TOKEN_REFRESHED
+ *             - LOGOUT
+ *             - LOGOUT_ALL
+ *             - SESSION_REVOKED
+ *             - OTHER_SESSIONS_REVOKED
+ *             - ACCOUNT_LOCKED
+ *             - SUSPICIOUS_LOGIN
+ *
+ *         ipAddress:
+ *           type: string
+ *           nullable: true
+ *           example: 192.168.1.10
+ *
+ *         userAgent:
+ *           type: string
+ *           nullable: true
+ *           example: Mozilla/5.0
+ *
+ *         metadata:
+ *           type: object
+ *           additionalProperties: true
+ *
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
  */
 export {};

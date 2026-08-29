@@ -1,10 +1,6 @@
 import { Schema, model } from "mongoose";
 import type { InferSchemaType, HydratedDocument } from "mongoose";
-
-export enum UserRole {
-  USER = "USER",
-  ADMIN = "ADMIN",
-}
+import { UserRole } from "../../../authorization/roles.js";
 
 export enum UserStatus {
   ACTIVE = "ACTIVE",
@@ -49,6 +45,15 @@ const userSchema = new Schema(
       type: String,
       enum: Object.values(UserStatus),
       default: UserStatus.ACTIVE,
+    },
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+    },
+
+    lockedUntil: {
+      type: Date,
+      default: null,
     },
   },
   {
