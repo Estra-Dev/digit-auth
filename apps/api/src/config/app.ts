@@ -1,12 +1,15 @@
 import express from "express";
+
 import { registerMiddleware } from "../middlewares/index.js";
+
 import { registerRoutes } from "../routes/index.js";
+
 import { notFoundMiddleware } from "../middlewares/notFound.middleware.js";
+
 import { errorMiddleware } from "../middlewares/error.middleware.js";
-import helmet from "helmet";
-import compression from "compression";
-import cookieParser from "cookie-parser";
+
 import { swaggerSpec, swaggerUi } from "../docs/swagger.js";
+
 import { config } from "./index.js";
 
 const app = express();

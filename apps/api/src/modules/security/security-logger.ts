@@ -2,6 +2,7 @@ import type { Request } from "express";
 
 import { securityEventService } from "./services/security-event.service.js";
 import { SecurityEvent } from "./types/security-event.js";
+import { getRequestContext } from "../../shared/http/request-context.js";
 
 export class SecurityLogger {
   static async log(
@@ -10,13 +11,15 @@ export class SecurityLogger {
     event: SecurityEvent,
     metadata?: Record<string, unknown>,
   ) {
+    const context = getRequestContext(req);
+
     await securityEventService.log({
       userId,
       event,
 
-      ipAddress: req.ip ?? req.socket.remoteAddress ?? null,
+      ipAddress: context.ipAddress,
 
-      userAgent: req.get("user-agent") ?? null,
+      userAgent: context.userAgent,
 
       ...(metadata !== undefined && {
         metadata,
