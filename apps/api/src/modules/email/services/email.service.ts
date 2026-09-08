@@ -1,5 +1,7 @@
+import { config } from "../../../config/index.js";
 import type { EmailProvider } from "../providers/email.provider.js";
 
+const DASHBOARD_URL = config.DASHBOARD_URL ?? "http://localhost:3000";
 export class EmailService {
   constructor(private readonly provider: EmailProvider) {}
 
@@ -8,7 +10,7 @@ export class EmailService {
     firstName: string;
     verificationToken: string;
   }): Promise<void> {
-    const verificationUrl = `http://localhost:5173/verify-email?token=${options.verificationToken}`;
+    const verificationUrl = `${DASHBOARD_URL}/verify-email?token=${options.verificationToken}`;
 
     const html = `
       <h2>Hello ${options.firstName},</h2>
@@ -36,7 +38,7 @@ export class EmailService {
     firstName: string;
     resetToken: string;
   }): Promise<void> {
-    const resetUrl = `http://localhost:5173/reset-password?token=${options.resetToken}`;
+    const resetUrl = `${DASHBOARD_URL}/reset-password?token=${options.resetToken}`;
 
     const html = `
     <h2>Hello ${options.firstName},</h2>

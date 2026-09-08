@@ -26,6 +26,7 @@ const envSchema = z.object({
   API_BASE_URL: z.url(),
 
   CORS_ORIGIN: z.url(),
+  DASHBOARD_URL: z.url(),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

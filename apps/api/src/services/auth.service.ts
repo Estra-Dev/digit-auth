@@ -140,19 +140,6 @@ export class AuthService {
 
       const attempts = await userRepository.getFailedAttempts(user.id);
 
-      // if (attempts >= MAX_LOGIN_ATTEMPTS) {
-      //   await userRepository.lockAccount(
-      //     user.id,
-      //     addMinutes(ACCOUNT_LOCK_MINUTES),
-      //   );
-
-      //   throw new AppError(
-      //     "Account locked due to too many failed login attempts.",
-      //     423,
-      //     true,
-      //   );
-      // }
-
       if (attempts >= MAX_LOGIN_ATTEMPTS) {
         await userRepository.lockAccount(
           user.id,
@@ -472,7 +459,14 @@ export class AuthService {
     } catch (error) {
       logger.error(
         {
-          error,
+          error:
+            error instanceof Error
+              ? {
+                  name: error.name,
+                  message: error.message,
+                  stack: error.stack,
+                }
+              : error,
           userId: user._id.toString(),
           email: user.email,
         },

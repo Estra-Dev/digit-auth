@@ -23,14 +23,18 @@ import { refreshTokenSchema } from "../validators/refresh-token.schema.js";
 import { requireAuth } from "../middlewares/require-auth.middleware.js";
 import { requireActiveUser } from "../middlewares/require-active-user.middleware.js";
 import { authRateLimit } from "../middlewares/rate-limit/auth-rate-limit.js";
+import { loginRateLimit } from "../middlewares/rate-limit/login-rate-limit.js";
+import { registerRateLimit } from "../middlewares/rate-limit/register-rate-limit.js";
+import { passwordResetRateLimit } from "../middlewares/rate-limit/password-reset-rate-limit.js";
 import { refreshTokenLimiter } from "../middlewares/rate-limit/refresh-rate-limit.js";
+import { resendVerificationRateLimit } from "../middlewares/rate-limit/resend-verification-rate-limit.js";
 import { apiRateLimit } from "../middlewares/rate-limit/api-rate-limit.js";
 import { logoutSchema } from "../validators/logout.schema.js";
 
 const authRouter = Router();
 
-authRouter.post("/register", authRateLimit, register);
-authRouter.post("/login", authRateLimit, validate(loginSchema), login);
+authRouter.post("/register", registerRateLimit, register);
+authRouter.post("/login", loginRateLimit, validate(loginSchema), login);
 authRouter.post(
   "/refresh",
   refreshTokenLimiter,
@@ -42,13 +46,13 @@ authRouter.post("/logout-all", validate(logoutSchema), logoutAll);
 authRouter.post("/verify-email", verifyEmail);
 authRouter.post(
   "/resend-verification-email",
-  authRateLimit,
+  resendVerificationRateLimit,
   validate(resendVerificationSchema),
   resendVerificationEmail,
 );
 authRouter.post(
   "/forgot-password",
-  authRateLimit,
+  passwordResetRateLimit,
   validate(forgotPasswordSchema),
   forgotPassword,
 );

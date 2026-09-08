@@ -11,15 +11,13 @@ export class SecurityLogger {
     event: SecurityEvent,
     metadata?: Record<string, unknown>,
   ) {
-    const context = getRequestContext(req);
+    const { ipAddress, userAgent } = getRequestContext(req);
 
     await securityEventService.log({
       userId,
       event,
-
-      ipAddress: context.ipAddress,
-
-      userAgent: context.userAgent,
+      ipAddress,
+      userAgent,
 
       ...(metadata !== undefined && {
         metadata,
