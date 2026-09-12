@@ -1,6 +1,5 @@
 "use client";
-
-import { useAuth } from "@/lib/auth/auth-context";
+import { useAuth } from "@digit-auth/react";
 
 export default function DashboardPage() {
   const { user } = useAuth();

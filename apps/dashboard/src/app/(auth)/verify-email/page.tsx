@@ -3,14 +3,20 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { authService } from "@/services/auth.service";
+
+import { useAuth } from "@digit-auth/react";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
+
+  const { verifyEmail } = useAuth();
+
   const token = searchParams.get("token");
 
   const [isLoading, setIsLoading] = useState(token !== null);
+
   const [isVerified, setIsVerified] = useState(false);
+
   const [error, setError] = useState(
     token === null ? "No verification token was provided." : "",
   );
@@ -26,7 +32,7 @@ function VerifyEmailContent() {
 
     async function verify() {
       try {
-        await authService.verifyEmail(verificationToken);
+        await verifyEmail(verificationToken);
 
         if (!cancelled) {
           setIsVerified(true);
@@ -51,7 +57,7 @@ function VerifyEmailContent() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, verifyEmail]);
 
   if (isLoading) {
     return (

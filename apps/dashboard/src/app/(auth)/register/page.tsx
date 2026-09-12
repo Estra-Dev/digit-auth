@@ -1,12 +1,15 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { authService } from "@/services/auth.service";
+import { useAuth } from "@digit-auth/react";
 
 export default function RegisterPage() {
   const router = useRouter();
+
+  const { register } = useAuth();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -32,7 +35,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const response = await authService.register({
+      await register({
         firstName,
         lastName,
         email,
@@ -40,10 +43,7 @@ export default function RegisterPage() {
         confirmPassword,
       });
 
-      setSuccess(
-        response.message ||
-          "Account created successfully. Please verify your email.",
-      );
+      setSuccess("Account created successfully. Please verify your email.");
 
       setTimeout(() => {
         router.push("/login");
@@ -200,12 +200,12 @@ export default function RegisterPage() {
 
         <div className="mt-6 text-center text-sm text-zinc-500">
           Already have an account?{" "}
-          <a
+          <Link
             href="/login"
             className="font-medium text-zinc-900 hover:underline"
           >
             Sign in
-          </a>
+          </Link>
         </div>
       </div>
     </main>

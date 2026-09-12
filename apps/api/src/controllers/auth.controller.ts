@@ -169,14 +169,23 @@ export const revokeSession = asyncHandler(
   },
 );
 
-export const revokeOtherSessions = asyncHandler(async (req, res) => {
-  const parsed = parseRequest(logoutSchema, req.body);
+export const revokeOtherSessions = asyncHandler(
+  async (req: Request<{}, {}, { refreshToken: string }>, res) => {
+    console.log("===== REVOKE OTHER SESSIONS CONTROLLER START =====");
 
-  await authService.revokeOtherSessions(req.user!.id, parsed.body.refreshToken);
+    console.log("REQ USER:", req.user);
+    console.log("REFRESH TOKEN PRESENT:", !!req.body.refreshToken);
 
-  return ApiResponse.success(res, {
-    statusCode: 200,
-    message: "Other sessions revoked successfully.",
-    data: null,
-  });
-});
+    console.log("CALLING AUTH SERVICE...");
+
+    await authService.revokeOtherSessions(req.user!.id, req.body.refreshToken);
+
+    console.log("AUTH SERVICE COMPLETED");
+
+    return ApiResponse.success(res, {
+      statusCode: 200,
+      message: "Other sessions revoked successfully.",
+      data: null,
+    });
+  },
+);

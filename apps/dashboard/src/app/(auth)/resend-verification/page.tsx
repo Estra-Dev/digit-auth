@@ -3,9 +3,11 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 
-import { authService } from "@/services/auth.service";
+import { useAuth } from "@digit-auth/react";
 
 export default function ResendVerificationPage() {
+  const { resendVerificationEmail } = useAuth();
+
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState("");
@@ -19,9 +21,11 @@ export default function ResendVerificationPage() {
     setIsLoading(true);
 
     try {
-      const response = await authService.resendVerificationEmail(email);
+      await resendVerificationEmail(email);
 
-      setSuccess(response.message);
+      setSuccess(
+        "If an account exists with that email, a verification email has been sent.",
+      );
     } catch (error) {
       setError(
         error instanceof Error

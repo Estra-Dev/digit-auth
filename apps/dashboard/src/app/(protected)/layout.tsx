@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
-import { useAuth } from "@/lib/auth/auth-context";
+import { useAuth } from "@digit-auth/react";
 import { DashboardHeader } from "@/components/dashboard/header";
 
 export default function ProtectedLayout({

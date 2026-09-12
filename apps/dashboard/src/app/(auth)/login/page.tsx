@@ -1,9 +1,9 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-
-import { useAuth } from "@/lib/auth/auth-context";
+import { useAuth } from "@digit-auth/react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -79,12 +79,21 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="mb-2 block text-sm font-medium text-zinc-700"
-            >
-              Password
-            </label>
+            <div className="mb-2 flex items-center justify-between">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-zinc-700"
+              >
+                Password
+              </label>
+
+              <Link
+                href="/forgot-password"
+                className="text-xs font-medium text-zinc-600 hover:text-zinc-900 hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
 
             <input
               id="password"
@@ -108,13 +117,13 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-6 text-center text-sm text-zinc-500">
-          {"Don't have an account?"}
-          <a
+          {"Don't have an account?"}{" "}
+          <Link
             href="/register"
             className="font-medium text-zinc-900 hover:underline"
           >
             Create one
-          </a>
+          </Link>
         </div>
       </div>
     </main>

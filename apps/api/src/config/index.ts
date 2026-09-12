@@ -24,7 +24,9 @@ export const config = {
 
   API_BASE_URL: env.API_BASE_URL,
 
-  CORS_ORIGIN: env.CORS_ORIGIN,
+  CORS_ORIGINS: env.CORS_ORIGINS.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
   DASHBOARD_URL: env.DASHBOARD_URL,
 
   RATE_LIMIT_AUTH_MAX: 5,

@@ -18,7 +18,7 @@ export const registerMiddleware = (app: Express) => {
 
   app.use(
     cors({
-      origin: config.CORS_ORIGIN,
+      origin: config.CORS_ORIGINS,
       credentials: true,
     }),
   );

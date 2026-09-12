@@ -25,7 +25,7 @@ const envSchema = z.object({
 
   API_BASE_URL: z.url(),
 
-  CORS_ORIGIN: z.url(),
+  CORS_ORIGINS: z.string().min(1),
   DASHBOARD_URL: z.url(),
 });
 

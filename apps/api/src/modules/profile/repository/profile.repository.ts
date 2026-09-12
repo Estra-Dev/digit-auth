@@ -2,7 +2,7 @@ import { User } from "../../auth/model/user.model.js";
 
 export class ProfileRepository {
   async findById(userId: string) {
-    return User.findById(userId);
+    return User.findById(userId).select("+passwordHashed");
   }
 
   async updateById(

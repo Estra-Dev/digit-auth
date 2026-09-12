@@ -629,34 +629,73 @@ export class AuthService {
   // }
 
   async revokeOtherSessions(userId: string, refreshToken: string) {
+    console.log("===== REVOKE OTHER SESSIONS START =====");
+    console.log("AUTH USER ID:", userId);
+
     let payload;
 
     try {
+      console.log("1. Verifying refresh token...");
+
       payload = await jwtService.verifyRefreshToken(refreshToken);
-    } catch {
+
+      console.log("2. Refresh token verified");
+      console.log("TOKEN USER ID:", payload.sub);
+    } catch (error) {
+      console.error("REFRESH TOKEN VERIFICATION FAILED:", error);
+
       throw new AppError("Invalid Refresh Token", 401, true);
     }
 
-    const hash = tokenHashService.hash(refreshToken);
+    try {
+      console.log("3. Hashing refresh token...");
 
-    const session = await sessionRepository.findByUserIdAndRefreshTokenHash(
-      new Types.ObjectId(payload.sub),
-      hash,
-    );
+      const hash = tokenHashService.hash(refreshToken);
 
-    if (!session) {
-      throw new AppError("Invalid Refresh Token", 401, true);
+      console.log("4. Refresh token hashed");
+
+      console.log("5. Finding current session...");
+
+      const session = await sessionRepository.findByUserIdAndRefreshTokenHash(
+        new Types.ObjectId(payload.sub),
+        hash,
+      );
+
+      console.log("6. Session lookup completed");
+      console.log("SESSION FOUND:", !!session);
+
+      if (!session) {
+        console.error("CURRENT SESSION WAS NOT FOUND");
+
+        throw new AppError("Invalid Refresh Token", 401, true);
+      }
+
+      console.log("7. Current session ID:", session.id);
+
+      console.log("8. Deleting other sessions...");
+
+      await sessionRepository.deleteOthers(
+        new Types.ObjectId(userId),
+        session.id,
+      );
+
+      console.log("9. Other sessions deleted");
+
+      console.log("10. Logging security event...");
+
+      await securityEventService.log({
+        userId,
+        event: SecurityEvent.OTHER_SESSIONS_REVOKED,
+      });
+
+      console.log("11. Security event logged");
+      console.log("===== REVOKE OTHER SESSIONS SUCCESS =====");
+    } catch (error) {
+      console.error("===== REVOKE OTHER SESSIONS FAILED =====");
+      console.error(error);
+
+      throw error;
     }
-
-    await sessionRepository.deleteOthers(
-      new Types.ObjectId(userId),
-      session.id,
-    );
-
-    await securityEventService.log({
-      userId,
-      event: SecurityEvent.OTHER_SESSIONS_REVOKED,
-    });
   }
 
   async resetPassword(data: ResetPasswordInput): Promise<void> {

@@ -31,3 +31,22 @@ export type RefreshTokenResponse = {
   accessToken: string;
   refreshToken: string;
 };
+
+export type AuthSession = {
+  id: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+  createdAt: string;
+  expiresAt: string;
+  lastUsedAt: string;
+};
+
+export type ForgotPasswordResponse = {
+  resetToken: string | null;
+} | null;
+
+export type ResetPasswordRequest = {
+  token: string;
+  password: string;
+  confirmPassword: string;
+};

@@ -17,3 +17,9 @@ coverage
 .DS_Store
 
 *.log
+
+# Next.js
+.next
+
+# TypeScript
+*.tsbuildinfo
