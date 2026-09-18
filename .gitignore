@@ -23,3 +23,5 @@ coverage
 
 # TypeScript
 *.tsbuildinfo
+# Package artifacts
+*.tgz

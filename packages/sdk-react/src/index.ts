@@ -5,6 +5,7 @@ export {
   ApiError,
   apiClient,
   createApiClient,
+  isApiError,
 } from "./lib/api-client";
 
 export { createAuthService } from "./lib/auth/auth.service";

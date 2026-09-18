@@ -7,8 +7,8 @@ export type ApiResponse<T> = {
 };
 
 export class ApiError extends Error {
-  status: number;
-  data: unknown;
+  readonly status: number;
+  readonly data: unknown;
 
   constructor(status: number, message: string, data: unknown = null) {
     super(message);
@@ -18,18 +18,58 @@ export class ApiError extends Error {
   }
 }
 
+export function isApiError(error: unknown): error is ApiError {
+  return error instanceof ApiError;
+}
+
 export type ApiClientOptions = {
   baseUrl?: string;
 };
 
+type TokenResponse = {
+  accessToken: string;
+  refreshToken: string;
+};
+
 const DEFAULT_API_URL = "http://localhost:5000/api/v1";
 
+function normalizeBaseUrl(baseUrl: string): string {
+  return baseUrl.replace(/\/+$/, "");
+}
+
+function normalizeEndpoint(endpoint: string): string {
+  if (!endpoint) {
+    return "";
+  }
+
+  return endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+}
+
+function isTokenResponse(data: unknown): data is TokenResponse {
+  if (!data || typeof data !== "object") {
+    return false;
+  }
+
+  const value = data as Record<string, unknown>;
+
+  return (
+    typeof value.accessToken === "string" &&
+    value.accessToken.length > 0 &&
+    typeof value.refreshToken === "string" &&
+    value.refreshToken.length > 0
+  );
+}
+
 export class ApiClient {
-  private readonly baseUrl;
+  private readonly baseUrl: string;
   private refreshPromise: Promise<boolean> | null = null;
 
   constructor(options: ApiClientOptions = {}) {
-    this.baseUrl = options.baseUrl ?? DEFAULT_API_URL;
+    this.baseUrl = normalizeBaseUrl(options.baseUrl ?? DEFAULT_API_URL);
+  }
+
+  private buildUrl(endpoint: string): string {
+    return `${this.baseUrl}${normalizeEndpoint(endpoint)}`;
   }
 
   private async request<T>(
@@ -41,13 +81,15 @@ export class ApiClient {
 
     const headers = new Headers(options.headers);
 
-    headers.set("Content-Type", "application/json");
+    if (options.body !== undefined && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
 
     if (accessToken) {
       headers.set("Authorization", `Bearer ${accessToken}`);
     }
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    const response = await fetch(this.buildUrl(endpoint), {
       ...options,
       headers,
       credentials: "include",
@@ -61,10 +103,7 @@ export class ApiClient {
       }
     }
 
-    const contentType = response.headers.get("content-type");
-    const isJson = contentType?.includes("application/json") ?? false;
-
-    const data = isJson ? ((await response.json()) as ApiResponse<T>) : null;
+    const data = await this.parseResponse<T>(response);
 
     if (!response.ok) {
       throw new ApiError(
@@ -82,6 +121,22 @@ export class ApiClient {
     }
 
     return data;
+  }
+
+  private async parseResponse<T>(
+    response: Response,
+  ): Promise<ApiResponse<T> | null> {
+    const contentType = response.headers.get("content-type");
+
+    if (!contentType?.includes("application/json")) {
+      return null;
+    }
+
+    try {
+      return (await response.json()) as ApiResponse<T>;
+    } catch {
+      return null;
+    }
   }
 
   private async refreshAccessToken(): Promise<boolean> {
@@ -106,26 +161,26 @@ export class ApiClient {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+      const response = await fetch(this.buildUrl("/auth/refresh"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({
-          refreshToken,
-        }),
+        body: JSON.stringify({ refreshToken }),
       });
 
-      if (!response.ok) {
+      const data = await this.parseResponse<TokenResponse>(response);
+
+      if (!response.ok || !data?.data) {
         tokenStorage.clear();
         return false;
       }
 
-      const data = (await response.json()) as ApiResponse<{
-        accessToken: string;
-        refreshToken: string;
-      }>;
+      if (!isTokenResponse(data.data)) {
+        tokenStorage.clear();
+        return false;
+      }
 
       tokenStorage.setAccessToken(data.data.accessToken);
       tokenStorage.setRefreshToken(data.data.refreshToken);
@@ -137,13 +192,13 @@ export class ApiClient {
     }
   }
 
-  async get<T>(endpoint: string) {
+  async get<T>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: "GET",
     });
   }
 
-  async post<T>(endpoint: string, body?: unknown) {
+  async post<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
     const options: RequestInit = {
       method: "POST",
     };
@@ -155,7 +210,7 @@ export class ApiClient {
     return this.request<T>(endpoint, options);
   }
 
-  async put<T>(endpoint: string, body?: unknown) {
+  async put<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
     const options: RequestInit = {
       method: "PUT",
     };
@@ -167,7 +222,7 @@ export class ApiClient {
     return this.request<T>(endpoint, options);
   }
 
-  async patch<T>(endpoint: string, body?: unknown) {
+  async patch<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
     const options: RequestInit = {
       method: "PATCH",
     };
@@ -179,7 +234,7 @@ export class ApiClient {
     return this.request<T>(endpoint, options);
   }
 
-  async delete<T>(endpoint: string, body?: unknown) {
+  async delete<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
     const options: RequestInit = {
       method: "DELETE",
     };
@@ -192,7 +247,7 @@ export class ApiClient {
   }
 }
 
-export function createApiClient(options?: ApiClientOptions) {
+export function createApiClient(options?: ApiClientOptions): ApiClient {
   return new ApiClient(options);
 }
 

@@ -19,6 +19,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@digit-auth/core": "workspace:*",
     "@types/cors": "^2.8.19",
     "@types/morgan": "^1.9.10",
     "argon2": "^0.44.0",

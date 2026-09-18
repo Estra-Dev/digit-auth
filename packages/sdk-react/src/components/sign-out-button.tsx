@@ -1,6 +1,6 @@
 "use client";
 
-import type { ButtonHTMLAttributes, MouseEvent } from "react";
+import { useState, type ButtonHTMLAttributes, type MouseEvent } from "react";
 
 import { useAuth } from "../lib/auth/auth-context";
 
@@ -14,19 +14,32 @@ export function SignOutButton({
 }: SignOutButtonProps) {
   const { logout } = useAuth();
 
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
   async function handleClick(event: MouseEvent<HTMLButtonElement>) {
     onClick?.(event);
 
-    if (event.defaultPrevented) {
+    if (event.defaultPrevented || isSigningOut) {
       return;
     }
 
-    await logout();
+    setIsSigningOut(true);
+
+    try {
+      await logout();
+    } finally {
+      setIsSigningOut(false);
+    }
   }
 
   return (
-    <button {...props} type="button" disabled={disabled} onClick={handleClick}>
-      {children}
+    <button
+      {...props}
+      type="button"
+      disabled={disabled || isSigningOut}
+      onClick={handleClick}
+    >
+      {isSigningOut ? "Signing out..." : children}
     </button>
   );
 }

@@ -1,11 +1,10 @@
 {
-  "name": "@digit-auth/react",
+  "name": "@digit-auth/node",
   "version": "0.1.0",
   "private": false,
-  "description": "React SDK for building applications with DigitAuth authentication and authorization.",
+  "description": "Node.js and Express SDK for DigitAuth authentication and authorization.",
   "type": "module",
   "main": "./dist/index.js",
-  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
@@ -20,7 +19,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/Estra-Dev/digit-auth.git",
-    "directory": "packages/sdk-react"
+    "directory": "packages/sdk-node"
   },
   "bugs": {
     "url": "https://github.com/Estra-Dev/digit-auth/issues"
@@ -37,10 +36,9 @@
   "keywords": [
     "authentication",
     "authorization",
-    "auth",
-    "react",
+    "express",
+    "node",
     "sdk",
-    "typescript",
     "digit-auth"
   ],
   "license": "MIT",
@@ -48,11 +46,14 @@
     "node": ">=20"
   },
   "peerDependencies": {
-    "react": "^19.0.0"
+    "express": "^5.0.0"
   },
   "devDependencies": {
-    "@types/react": "^19.0.0",
-    "react": "^19.0.0",
+    "@types/express": "^5.0.6",
+    "express": "^5.2.1",
     "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@digit-auth/core": "^0.1.0"
   }
 }

@@ -30,6 +30,7 @@ type AuthContextValue = {
   refreshUser: () => Promise<void>;
 
   login: (data: { email: string; password: string }) => Promise<void>;
+
   register: (data: {
     email: string;
     password: string;
@@ -64,6 +65,10 @@ export type AuthProviderProps = {
   apiUrl?: string;
 };
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 export function AuthProvider({ children, apiUrl }: AuthProviderProps) {
   const apiClient = useMemo(
     () => createApiClient(apiUrl !== undefined ? { baseUrl: apiUrl } : {}),
@@ -86,12 +91,9 @@ export function AuthProvider({ children, apiUrl }: AuthProviderProps) {
       setAuthError(null);
     } catch (error) {
       setUser(null);
+      setAuthError(getErrorMessage(error, "Unable to load the current user."));
 
-      setAuthError(
-        error instanceof Error
-          ? error.message
-          : "Unable to load the current user.",
-      );
+      throw error;
     }
   }, [authService]);
 
@@ -99,13 +101,24 @@ export function AuthProvider({ children, apiUrl }: AuthProviderProps) {
     async (data: { email: string; password: string }) => {
       setAuthError(null);
 
-      const response = await authService.login(data);
+      try {
+        const response = await authService.login(data);
 
-      tokenStorage.setAccessToken(response.data.accessToken);
+        tokenStorage.setAccessToken(response.data.accessToken);
 
-      tokenStorage.setRefreshToken(response.data.refreshToken);
+        tokenStorage.setRefreshToken(response.data.refreshToken);
 
-      setUser(response.data.user);
+        setUser(response.data.user);
+      } catch (error) {
+        tokenStorage.clear();
+        setUser(null);
+
+        const message = getErrorMessage(error, "Unable to sign in.");
+
+        setAuthError(message);
+
+        throw error;
+      }
     },
     [authService],
   );
@@ -120,7 +133,18 @@ export function AuthProvider({ children, apiUrl }: AuthProviderProps) {
     }) => {
       setAuthError(null);
 
-      await authService.register(data);
+      try {
+        await authService.register(data);
+      } catch (error) {
+        const message = getErrorMessage(
+          error,
+          "Unable to create your account.",
+        );
+
+        setAuthError(message);
+
+        throw error;
+      }
     },
     [authService],
   );
@@ -155,15 +179,38 @@ export function AuthProvider({ children, apiUrl }: AuthProviderProps) {
 
   const verifyEmail = useCallback(
     async (token: string) => {
-      await authService.verifyEmail(token);
-      await refreshUser();
+      setAuthError(null);
+
+      try {
+        await authService.verifyEmail(token);
+        await refreshUser();
+      } catch (error) {
+        const message = getErrorMessage(error, "Unable to verify your email.");
+
+        setAuthError(message);
+
+        throw error;
+      }
     },
     [authService, refreshUser],
   );
 
   const resendVerificationEmail = useCallback(
     async (email: string) => {
-      await authService.resendVerificationEmail(email);
+      setAuthError(null);
+
+      try {
+        await authService.resendVerificationEmail(email);
+      } catch (error) {
+        const message = getErrorMessage(
+          error,
+          "Unable to resend the verification email.",
+        );
+
+        setAuthError(message);
+
+        throw error;
+      }
     },
     [authService],
   );
@@ -193,16 +240,39 @@ export function AuthProvider({ children, apiUrl }: AuthProviderProps) {
 
   const forgotPassword = useCallback(
     async (email: string) => {
-      const response = await authService.forgotPassword(email);
+      setAuthError(null);
 
-      return response.data;
+      try {
+        const response = await authService.forgotPassword(email);
+
+        return response.data;
+      } catch (error) {
+        const message = getErrorMessage(
+          error,
+          "Unable to process the password reset request.",
+        );
+
+        setAuthError(message);
+
+        throw error;
+      }
     },
     [authService],
   );
 
   const resetPassword = useCallback(
     async (data: ResetPasswordRequest) => {
-      await authService.resetPassword(data);
+      setAuthError(null);
+
+      try {
+        await authService.resetPassword(data);
+      } catch (error) {
+        const message = getErrorMessage(error, "Unable to reset the password.");
+
+        setAuthError(message);
+
+        throw error;
+      }
     },
     [authService],
   );
@@ -214,32 +284,37 @@ export function AuthProvider({ children, apiUrl }: AuthProviderProps) {
       const refreshToken = tokenStorage.getRefreshToken();
 
       if (!refreshToken) {
-        if (mounted) setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
+
         return;
       }
 
       try {
-        // The ApiClient automatically refreshes the access token
-        // if the current access token is expired or missing.
-        const userResponse = await authService.getCurrentUser();
+        const response = await authService.getCurrentUser();
 
-        if (mounted) {
-          setUser(userResponse.data);
-          setAuthError(null);
+        if (!mounted) {
+          return;
         }
+
+        setUser(response.data);
+        setAuthError(null);
       } catch (error) {
         tokenStorage.clear();
 
-        if (mounted) {
-          setUser(null);
-          setAuthError(
-            error instanceof Error
-              ? error.message
-              : "Unable to restore authentication.",
-          );
+        if (!mounted) {
+          return;
         }
+
+        setUser(null);
+        setAuthError(
+          getErrorMessage(error, "Unable to restore authentication."),
+        );
       } finally {
-        if (mounted) setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     }
 
@@ -261,6 +336,7 @@ export function AuthProvider({ children, apiUrl }: AuthProviderProps) {
 
       login,
       register,
+
       logout,
       logoutAll,
 
@@ -282,6 +358,8 @@ export function AuthProvider({ children, apiUrl }: AuthProviderProps) {
       refreshUser,
 
       login,
+      register,
+
       logout,
       logoutAll,
 
