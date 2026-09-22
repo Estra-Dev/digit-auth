@@ -4,6 +4,13 @@ import { AuditEvent } from "../types/audit-event.js";
 
 const auditSchema = new Schema(
   {
+    applicationId: {
+      type: Types.ObjectId,
+      ref: "Application",
+      required: true,
+      index: true,
+    },
+
     userId: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -37,6 +44,17 @@ const auditSchema = new Schema(
     timestamps: true,
   },
 );
+
+auditSchema.index({
+  applicationId: 1,
+  userId: 1,
+  createdAt: -1,
+});
+
+auditSchema.index({
+  applicationId: 1,
+  event: 1,
+});
 
 export type AuditLogDocument = InferSchemaType<typeof auditSchema> & {
   _id: Types.ObjectId;

@@ -8,6 +8,13 @@ import {
 
 const sessionSchema = new Schema(
   {
+    applicationId: {
+      type: Types.ObjectId,
+      ref: "Application",
+      required: true,
+      index: true,
+    },
+
     userId: {
       type: Types.ObjectId,
       ref: "User",
@@ -35,6 +42,7 @@ const sessionSchema = new Schema(
       type: Date,
       required: true,
     },
+
     lastUsedAt: {
       type: Date,
       default: Date.now,
@@ -46,8 +54,22 @@ const sessionSchema = new Schema(
   },
 );
 
-sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+sessionSchema.index(
+  {
+    expiresAt: 1,
+  },
+  {
+    expireAfterSeconds: 0,
+  },
+);
+
 sessionSchema.index({
+  applicationId: 1,
+  userId: 1,
+});
+
+sessionSchema.index({
+  applicationId: 1,
   userId: 1,
   refreshTokenHash: 1,
 });

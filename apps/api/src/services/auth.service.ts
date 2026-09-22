@@ -41,48 +41,11 @@ import type { RefreshTokenInput } from "../validators/refresh-token.schema.js";
 import type { LogoutInput } from "../validators/logout.schema.js";
 
 export class AuthService {
-  // async register(data: RegisterInput) {
-  //   // check if user exist
-  //   const existingUser = await userRepository.findByEmail(data.email);
-
-  //   if (existingUser) {
-  //     throw new AppError("An Account with this email already exist", 409, true);
-  //   }
-  //   const hashedPassword = await passwordService.hash(data.password);
-  //   // const isValid = await verifyPassword(hashedPassword, data.password);
-  //   // console.log(hashedPassword, isValid);
-
-  //   // create the user
-  //   const user = await userRepository.create({
-  //     firstName: data.firstName,
-  //     lastName: data.lastName,
-  //     passwordHashed: hashedPassword,
-  //     email: data.email,
-  //   });
-
-  //   await this.sendVerificationEmail(user);
-
-  //   return UserMapper.toResponse(user);
-
-  //   // if (!config.isTest) {
-  //   //   await this.sendVerificationEmail(user);
-  //   // }
-
-  //   // return UserMapper.toResponse(user);
-
-  //   // return {
-  //   //   id: userId,
-  //   //   email: data.email,
-  //   //   hashedPassword,
-  //   //   accessToken,
-  //   //   refreshToken,
-  //   //   createdAt: new Date(),
-  //   // };
-  // }
-
-  async register(data: RegisterInput) {
-    // Check if user exists
-    const existingUser = await userRepository.findByEmail(data.email);
+  async register(applicationId: Types.ObjectId, data: RegisterInput) {
+    const existingUser = await userRepository.findByEmail(
+      applicationId,
+      data.email,
+    );
 
     if (existingUser) {
       throw new AppError("An Account with this email already exist", 409, true);
@@ -91,14 +54,17 @@ export class AuthService {
     const hashedPassword = await passwordService.hash(data.password);
 
     const user = await userRepository.create({
+      applicationId,
       firstName: data.firstName,
       lastName: data.lastName,
       email: data.email,
       passwordHashed: hashedPassword,
     });
 
-    // Send email and capture raw token
-    const verificationToken = await this.sendVerificationEmail(user);
+    const verificationToken = await this.sendVerificationEmail(
+      applicationId,
+      user,
+    );
 
     const response = UserMapper.toResponse(user);
 
@@ -112,8 +78,12 @@ export class AuthService {
     return response;
   }
 
-  async login(data: LoginInput) {
-    const user = await userRepository.findEmailWithPassword(data.email);
+  async login(applicationId: Types.ObjectId, data: LoginInput) {
+    const user = await userRepository.findEmailWithPassword(
+      applicationId,
+      data.email,
+    );
+
     if (!user) {
       throw new AppError("Invalid Email or Password", 401, true);
     }
@@ -130,23 +100,30 @@ export class AuthService {
       user.passwordHashed,
       data.password,
     );
+
     if (!validPassword) {
-      await userRepository.incrementFailedLoginAttempts(user.id);
+      await userRepository.incrementFailedLoginAttempts(applicationId, user.id);
 
       await securityEventService.log({
+        applicationId,
         userId: user.id,
         event: SecurityEvent.LOGIN_FAILED,
       });
 
-      const attempts = await userRepository.getFailedAttempts(user.id);
+      const attempts = await userRepository.getFailedAttempts(
+        applicationId,
+        user.id,
+      );
 
       if (attempts >= MAX_LOGIN_ATTEMPTS) {
         await userRepository.lockAccount(
+          applicationId,
           user.id,
           addMinutes(ACCOUNT_LOCK_MINUTES),
         );
 
         await securityEventService.log({
+          applicationId,
           userId: user.id,
           event: SecurityEvent.ACCOUNT_LOCKED,
           metadata: {
@@ -165,7 +142,7 @@ export class AuthService {
       throw new AppError("Invalid Email or Password", 401, true);
     }
 
-    await userRepository.resetFailedLoginAttempts(user.id);
+    await userRepository.resetFailedLoginAttempts(applicationId, user.id);
 
     if (!user.emailVerified) {
       throw new AppError(
@@ -174,32 +151,34 @@ export class AuthService {
         true,
       );
     }
-    // Generate JWT payload
-    const payload = {
+
+    const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
+      applicationId: applicationId.toString(),
     };
 
-    // Generate tokens
     const accessToken = await jwtService.generateAccessToken(payload);
+
     const refreshToken = await jwtService.generateRefreshToken(payload);
 
-    // Hash refresh token
     const refreshTokenHash = tokenHashService.hash(refreshToken);
 
-    // create session
     await sessionRepository.create({
+      applicationId,
       userId: user._id,
       refreshTokenHash,
       expiresAt: addDays(config.SESSION_EXPIRES_IN_DAYS),
     });
 
     await auditService.log({
+      applicationId,
       userId: user.id,
       event: AuditEvent.LOGIN,
     });
 
     await securityEventService.log({
+      applicationId,
       userId: user.id,
       event: SecurityEvent.LOGIN_SUCCESS,
     });
@@ -211,9 +190,8 @@ export class AuthService {
     };
   }
 
-  async refreshToken(data: RefreshTokenInput) {
-    // Verify the refresh token
-    let payload;
+  async refreshToken(applicationId: Types.ObjectId, data: RefreshTokenInput) {
+    let payload: JwtPayload;
 
     try {
       payload = await jwtService.verifyRefreshToken(data.refreshToken);
@@ -221,32 +199,17 @@ export class AuthService {
       throw new AppError("Invalid Refresh Token", 401, true);
     }
 
-    // console.log(payload);
-
-    // Hash the incoming refresh token
     const refreshTokenHash = tokenHashService.hash(data.refreshToken);
-
-    // Find the matching session
-    // const session = await sessionRepository.findByUserIdAndRefreshTokenHash(
-    //   new Types.ObjectId(payload.sub),
-    //   refreshTokenHash,
-    // );
-
-    // // Reject if no active session exists
-    // if (!session) {
-    //   throw new AppError("Invalid Refresh Token", 401, true);
-    // }
 
     const userId = new Types.ObjectId(payload.sub);
 
     const session = await sessionRepository.findByUserIdAndRefreshTokenHash(
+      applicationId,
       userId,
       refreshTokenHash,
     );
 
     if (!session) {
-      // await sessionRepository.deleteAllForUser(userId);
-
       throw new AppError(
         "Refresh token reuse detected. Please login again.",
         401,
@@ -259,26 +222,28 @@ export class AuthService {
     try {
       dbSession.startTransaction();
 
-      //  Create a fresh JWT payload
       const newPayload: JwtPayload = {
         sub: payload.sub,
         email: payload.email,
+        applicationId: applicationId.toString(),
       };
 
-      // Generate new tokens
       const accessToken = await jwtService.generateAccessToken(newPayload);
+
       const newRefreshToken = await jwtService.generateRefreshToken(newPayload);
 
-      // Hash the new refresh token
       const newRefreshTokenHash = tokenHashService.hash(newRefreshToken);
 
-      // Delete the old session (rotation)
-      await sessionRepository.deleteById(session.id, dbSession);
+      await sessionRepository.deleteByIdInApplication(
+        applicationId,
+        session.id,
+        dbSession,
+      );
 
-      // Store the new session
       await sessionRepository.create(
         {
-          userId: new Types.ObjectId(payload.sub),
+          applicationId,
+          userId,
           refreshTokenHash: newRefreshTokenHash,
           expiresAt: addDays(config.SESSION_EXPIRES_IN_DAYS),
         },
@@ -286,13 +251,13 @@ export class AuthService {
       );
 
       await securityEventService.log({
+        applicationId,
         userId: payload.sub,
         event: SecurityEvent.TOKEN_REFRESHED,
       });
 
       await dbSession.commitTransaction();
 
-      // Return the new tokens
       return {
         accessToken,
         refreshToken: newRefreshToken,
@@ -305,16 +270,20 @@ export class AuthService {
     }
   }
 
-  async getMySessions(userId: string) {
+  async getMySessions(applicationId: Types.ObjectId, userId: string) {
     const sessions = await sessionRepository.findByUserId(
+      applicationId,
       new Types.ObjectId(userId),
     );
 
     return sessions.map(SessionMapper.toResponse);
   }
 
-  async logout(data: LogoutInput): Promise<void> {
-    let payload;
+  async logout(
+    applicationId: Types.ObjectId,
+    data: LogoutInput,
+  ): Promise<void> {
+    let payload: JwtPayload;
 
     try {
       payload = await jwtService.verifyRefreshToken(data.refreshToken);
@@ -325,6 +294,7 @@ export class AuthService {
     const refreshTokenHash = tokenHashService.hash(data.refreshToken);
 
     const session = await sessionRepository.findByUserIdAndRefreshTokenHash(
+      applicationId,
       new Types.ObjectId(payload.sub),
       refreshTokenHash,
     );
@@ -332,14 +302,21 @@ export class AuthService {
     if (!session) {
       return;
     }
-    await sessionRepository.deleteById(session.id);
+
+    await sessionRepository.deleteByIdInApplication(applicationId, session.id);
+
     await securityEventService.log({
+      applicationId,
       userId: payload.sub,
       event: SecurityEvent.LOGOUT,
     });
   }
-  async logoutAll(data: LogoutInput): Promise<void> {
-    let payload;
+
+  async logoutAll(
+    applicationId: Types.ObjectId,
+    data: LogoutInput,
+  ): Promise<void> {
+    let payload: JwtPayload;
 
     try {
       payload = await jwtService.verifyRefreshToken(data.refreshToken);
@@ -349,102 +326,69 @@ export class AuthService {
 
     const userId = new Types.ObjectId(payload.sub);
 
-    await sessionRepository.deleteAllForUser(userId);
+    await sessionRepository.deleteAllForUser(applicationId, userId);
 
     await securityEventService.log({
+      applicationId,
       userId: payload.sub,
       event: SecurityEvent.LOGOUT_ALL,
     });
   }
-  // async verifyEmail(token: string): Promise<void> {
-  //   // Hash incoming token
-  //   const tokenHash = tokenHashService.hash(token);
 
-  //   // Find verification token
-  //   const verificationToken =
-  //     await verificationTokenRepository.findByTokenHash(tokenHash);
-
-  //   if (!verificationToken) {
-  //     throw new AppError("Invalid verification Token", 400, true);
-  //   }
-
-  //   // Mark user as verified
-  //   await userRepository.verifyUser(verificationToken.userId);
-
-  //   // Delete token
-  //   await verificationTokenRepository.deleteById(verificationToken.id);
-
-  //   // await securityEventService.log({
-  //   //   userId: userId,
-  //   //   event: SecurityEvent.EMAIL_VERIFIED,
-  //   // });
-  // }
-
-  async verifyEmail(token: string): Promise<void> {
+  async verifyEmail(
+    applicationId: Types.ObjectId,
+    token: string,
+  ): Promise<void> {
     const tokenHash = tokenHashService.hash(token);
 
-    const verificationToken =
-      await verificationTokenRepository.findByTokenHash(tokenHash);
+    const verificationToken = await verificationTokenRepository.findByTokenHash(
+      applicationId,
+      tokenHash,
+    );
 
     if (!verificationToken) {
       throw new AppError("Invalid verification Token", 400, true);
     }
 
-    await userRepository.verifyUser(verificationToken.userId);
+    const user = await userRepository.findByIdInApplication(
+      applicationId,
+      verificationToken.userId.toString(),
+    );
 
-    await verificationTokenRepository.deleteById(verificationToken.id);
+    if (!user) {
+      throw new AppError("Invalid verification Token", 400, true);
+    }
+
+    await userRepository.verifyUser(applicationId, verificationToken.userId);
+
+    await verificationTokenRepository.deleteByIdInApplication(
+      applicationId,
+      verificationToken.id,
+    );
 
     await securityEventService.log({
+      applicationId,
       userId: verificationToken.userId.toString(),
       event: SecurityEvent.EMAIL_VERIFIED,
     });
   }
 
-  // private async sendVerificationEmail(user: {
-  //   _id: Types.ObjectId;
-  //   firstName: string;
-  //   email: string;
-  // }) {
-  //   const verificationToken = tokenService.generateVerificationToken();
-  //   const verificationTokenHash = tokenHashService.hash(verificationToken);
-
-  //   await verificationTokenRepository.deleteByUserId(user._id);
-  //   await verificationTokenRepository.create({
-  //     userId: user._id,
-  //     tokenHash: verificationTokenHash,
-  //     expiresAt: addDays(1),
-  //   });
-
-  //   try {
-  //     await emailService.sendVerificationEmail({
-  //       email: user.email,
-  //       firstName: user.firstName,
-  //       verificationToken,
-  //     });
-  //   } catch (error) {
-  //     logger.error(
-  //       {
-  //         error,
-  //         userId: user._id.toString(),
-  //         email: user.email,
-  //       },
-  //       "Failed to send verification token",
-  //     );
-  //   }
-  // }
-
-  private async sendVerificationEmail(user: {
-    _id: Types.ObjectId;
-    firstName: string;
-    email: string;
-  }): Promise<string> {
+  private async sendVerificationEmail(
+    applicationId: Types.ObjectId,
+    user: {
+      _id: Types.ObjectId;
+      firstName: string;
+      email: string;
+    },
+  ): Promise<string> {
     const verificationToken = tokenService.generateVerificationToken();
 
     const verificationTokenHash = tokenHashService.hash(verificationToken);
 
-    await verificationTokenRepository.deleteByUserId(user._id);
+    await verificationTokenRepository.deleteByUserId(applicationId, user._id);
 
     await verificationTokenRepository.create({
+      applicationId,
       userId: user._id,
       tokenHash: verificationTokenHash,
       expiresAt: addDays(1),
@@ -474,42 +418,42 @@ export class AuthService {
       );
     }
 
-    // IMPORTANT
     return verificationToken;
   }
 
-  async resendVerificationEmail(email: string): Promise<void> {
-    const user = await userRepository.findByEmail(email);
+  async resendVerificationEmail(
+    applicationId: Types.ObjectId,
+    email: string,
+  ): Promise<void> {
+    const user = await userRepository.findByEmail(applicationId, email);
 
     if (!user) {
-      // throw new AppError("User not found", 404, true);
       return;
     }
 
     if (user.emailVerified) {
-      // throw new AppError("Email is already verified", 400, true);
       return;
     }
 
-    await this.sendVerificationEmail(user);
+    await this.sendVerificationEmail(applicationId, user);
   }
 
-  private async sendPasswordResetEmail(user: {
-    _id: Types.ObjectId;
-    firstName: string;
-    email: string;
-  }): Promise<string> {
-    // Generate raw token
+  private async sendPasswordResetEmail(
+    applicationId: Types.ObjectId,
+    user: {
+      _id: Types.ObjectId;
+      firstName: string;
+      email: string;
+    },
+  ): Promise<string> {
     const resetToken = tokenService.generatePasswordResetToken();
 
-    // Hash token before storing
     const resetTokenHash = tokenHashService.hash(resetToken);
 
-    // Delete any existing reset tokens
-    await passwordResetTokenRepository.deleteByUserId(user._id);
+    await passwordResetTokenRepository.deleteByUserId(applicationId, user._id);
 
-    // Save the new token
     await passwordResetTokenRepository.create({
+      applicationId,
       userId: user._id,
       tokenHash: resetTokenHash,
       expiresAt: addDays(1),
@@ -535,39 +479,17 @@ export class AuthService {
     return resetToken;
   }
 
-  // async forgotPassword(email: string) {
-  //   const user = await userRepository.findByEmail(email);
-
-  //   if (!user) {
-  //     return config.isTest ? { resetToken: null } : undefined;
-  //   }
-
-  //   const resetToken = await this.sendPasswordResetEmail(user);
-
-  //   if (config.isTest) {
-  //     return {
-  //       resetToken,
-  //     };
-  //   }
-
-  //   console.log({
-  //     isTest: config.isTest,
-  //     env: config.env,
-  //   });
-
-  //   return;
-  // }
-
-  async forgotPassword(email: string) {
-    const user = await userRepository.findByEmail(email);
+  async forgotPassword(applicationId: Types.ObjectId, email: string) {
+    const user = await userRepository.findByEmail(applicationId, email);
 
     if (!user) {
       return config.isTest ? { resetToken: null } : undefined;
     }
 
-    const resetToken = await this.sendPasswordResetEmail(user);
+    const resetToken = await this.sendPasswordResetEmail(applicationId, user);
 
     await securityEventService.log({
+      applicationId,
       userId: user.id,
       event: SecurityEvent.PASSWORD_RESET_REQUESTED,
     });
@@ -581,8 +503,13 @@ export class AuthService {
     return;
   }
 
-  async revokeSession(userId: string, sessionId: string) {
+  async revokeSession(
+    applicationId: Types.ObjectId,
+    userId: string,
+    sessionId: string,
+  ) {
     const owner = await sessionRepository.belongsToUser(
+      applicationId,
       sessionId,
       new Types.ObjectId(userId),
     );
@@ -591,9 +518,10 @@ export class AuthService {
       throw new AppError("Session not found", 404, true);
     }
 
-    await sessionRepository.deleteById(sessionId);
+    await sessionRepository.deleteByIdInApplication(applicationId, sessionId);
 
     await securityEventService.log({
+      applicationId,
       userId,
       event: SecurityEvent.SESSION_REVOKED,
       metadata: {
@@ -602,153 +530,104 @@ export class AuthService {
     });
   }
 
-  // async revokeOtherSessions(userId: string, refreshToken: string) {
-  //   let payload;
-
-  //   try {
-  //     payload = await jwtService.verifyRefreshToken(refreshToken);
-  //   } catch {
-  //     throw new AppError("Invalid Refresh Token", 401, true);
-  //   }
-
-  //   const hash = tokenHashService.hash(refreshToken);
-
-  //   const session = await sessionRepository.findByUserIdAndRefreshTokenHash(
-  //     new Types.ObjectId(payload.sub),
-  //     hash,
-  //   );
-
-  //   if (!session) {
-  //     throw new AppError("Invalid Refresh Token", 401, true);
-  //   }
-
-  //   await sessionRepository.deleteOthers(
-  //     new Types.ObjectId(userId),
-  //     session.id,
-  //   );
-  // }
-
-  async revokeOtherSessions(userId: string, refreshToken: string) {
-    console.log("===== REVOKE OTHER SESSIONS START =====");
-    console.log("AUTH USER ID:", userId);
-
-    let payload;
+  async revokeOtherSessions(
+    applicationId: Types.ObjectId,
+    userId: string,
+    refreshToken: string,
+  ) {
+    let payload: JwtPayload;
 
     try {
-      console.log("1. Verifying refresh token...");
-
       payload = await jwtService.verifyRefreshToken(refreshToken);
-
-      console.log("2. Refresh token verified");
-      console.log("TOKEN USER ID:", payload.sub);
-    } catch (error) {
-      console.error("REFRESH TOKEN VERIFICATION FAILED:", error);
-
+    } catch {
       throw new AppError("Invalid Refresh Token", 401, true);
     }
 
-    try {
-      console.log("3. Hashing refresh token...");
-
-      const hash = tokenHashService.hash(refreshToken);
-
-      console.log("4. Refresh token hashed");
-
-      console.log("5. Finding current session...");
-
-      const session = await sessionRepository.findByUserIdAndRefreshTokenHash(
-        new Types.ObjectId(payload.sub),
-        hash,
-      );
-
-      console.log("6. Session lookup completed");
-      console.log("SESSION FOUND:", !!session);
-
-      if (!session) {
-        console.error("CURRENT SESSION WAS NOT FOUND");
-
-        throw new AppError("Invalid Refresh Token", 401, true);
-      }
-
-      console.log("7. Current session ID:", session.id);
-
-      console.log("8. Deleting other sessions...");
-
-      await sessionRepository.deleteOthers(
-        new Types.ObjectId(userId),
-        session.id,
-      );
-
-      console.log("9. Other sessions deleted");
-
-      console.log("10. Logging security event...");
-
-      await securityEventService.log({
-        userId,
-        event: SecurityEvent.OTHER_SESSIONS_REVOKED,
-      });
-
-      console.log("11. Security event logged");
-      console.log("===== REVOKE OTHER SESSIONS SUCCESS =====");
-    } catch (error) {
-      console.error("===== REVOKE OTHER SESSIONS FAILED =====");
-      console.error(error);
-
-      throw error;
+    if (payload.sub !== userId) {
+      throw new AppError("Invalid Refresh Token", 401, true);
     }
+
+    const hash = tokenHashService.hash(refreshToken);
+
+    const session = await sessionRepository.findByUserIdAndRefreshTokenHash(
+      applicationId,
+      new Types.ObjectId(payload.sub),
+      hash,
+    );
+
+    if (!session) {
+      throw new AppError("Invalid Refresh Token", 401, true);
+    }
+
+    await sessionRepository.deleteOthers(
+      applicationId,
+      new Types.ObjectId(userId),
+      session.id,
+    );
+
+    await securityEventService.log({
+      applicationId,
+      userId,
+      event: SecurityEvent.OTHER_SESSIONS_REVOKED,
+    });
   }
 
-  async resetPassword(data: ResetPasswordInput): Promise<void> {
+  async resetPassword(
+    applicationId: Types.ObjectId,
+    data: ResetPasswordInput,
+  ): Promise<void> {
     const session = await mongoose.startSession();
 
     try {
       session.startTransaction();
 
-      // Hash incoming token
-
       const tokenHash = tokenHashService.hash(data.token);
 
-      // Find stored token
       const passwordResetToken =
-        await passwordResetTokenRepository.findByTokenHash(tokenHash);
+        await passwordResetTokenRepository.findByTokenHash(
+          applicationId,
+          tokenHash,
+        );
 
       if (!passwordResetToken) {
         throw new AppError("Invalid or expired token", 400, true);
       }
 
-      // find user
-      const user = await userRepository.findById(
+      const user = await userRepository.findByIdInApplication(
+        applicationId,
         passwordResetToken.userId.toString(),
       );
 
       if (!user) {
-        throw new AppError("User not found", 404, true);
+        throw new AppError("Invalid or expired token", 400, true);
       }
 
-      // Hash new password
       const passwordHashed = await passwordService.hash(data.password);
 
-      // Update password
-      await userRepository.updatePassword(user._id, passwordHashed, session);
+      await userRepository.updatePassword(
+        applicationId,
+        user._id,
+        passwordHashed,
+        session,
+      );
 
-      // Delete reset token
-      await passwordResetTokenRepository.deleteById(
+      await passwordResetTokenRepository.deleteByIdInApplication(
+        applicationId,
         passwordResetToken.id,
         session,
       );
 
       await securityEventService.log({
+        applicationId,
         userId: user.id,
         event: SecurityEvent.PASSWORD_CHANGED,
       });
 
-      // Delete ALL sessions
-      await sessionRepository.deleteByUserId(user._id, session);
+      await sessionRepository.deleteByUserId(applicationId, user._id, session);
 
       await session.commitTransaction();
     } catch (error) {
       await session.abortTransaction();
-
       throw error;
     } finally {
       await session.endSession();

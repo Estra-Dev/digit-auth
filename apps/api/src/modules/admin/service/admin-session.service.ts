@@ -5,23 +5,31 @@ import { sessionRepository } from "../../auth/repositories/session.repository.js
 import { userRepository } from "../../auth/repositories/user.repository.js";
 
 class AdminSessionService {
-  async getUserSessions(userId: string) {
+  async getUserSessions(applicationId: Types.ObjectId, userId: string) {
     if (!Types.ObjectId.isValid(userId)) {
       throw new AppError("Invalid user ID", 400, true);
     }
 
-    const user = await userRepository.findById(userId);
+    const user = await userRepository.findByIdInApplication(
+      applicationId,
+      userId,
+    );
 
     if (!user) {
       throw new AppError("User not found", 404, true);
     }
 
     return sessionRepository.findByUserIdWithDetails(
+      applicationId,
       new Types.ObjectId(userId),
     );
   }
 
-  async revokeUserSession(userId: string, sessionId: string) {
+  async revokeUserSession(
+    applicationId: Types.ObjectId,
+    userId: string,
+    sessionId: string,
+  ) {
     if (!Types.ObjectId.isValid(userId)) {
       throw new AppError("Invalid user ID", 400, true);
     }
@@ -30,13 +38,17 @@ class AdminSessionService {
       throw new AppError("Invalid session ID", 400, true);
     }
 
-    const user = await userRepository.findById(userId);
+    const user = await userRepository.findByIdInApplication(
+      applicationId,
+      userId,
+    );
 
     if (!user) {
       throw new AppError("User not found", 404, true);
     }
 
     const session = await sessionRepository.findByIdForUser(
+      applicationId,
       sessionId,
       new Types.ObjectId(userId),
     );
@@ -45,23 +57,33 @@ class AdminSessionService {
       throw new AppError("Session not found", 404, true);
     }
 
-    await sessionRepository.deleteById(sessionId);
+    await sessionRepository.deleteByIdForUser(
+      applicationId,
+      sessionId,
+      new Types.ObjectId(userId),
+    );
 
     return null;
   }
 
-  async revokeAllUserSessions(userId: string) {
+  async revokeAllUserSessions(applicationId: Types.ObjectId, userId: string) {
     if (!Types.ObjectId.isValid(userId)) {
       throw new AppError("Invalid user ID", 400, true);
     }
 
-    const user = await userRepository.findById(userId);
+    const user = await userRepository.findByIdInApplication(
+      applicationId,
+      userId,
+    );
 
     if (!user) {
       throw new AppError("User not found", 404, true);
     }
 
-    await sessionRepository.deleteAllForUser(new Types.ObjectId(userId));
+    await sessionRepository.deleteAllForUser(
+      applicationId,
+      new Types.ObjectId(userId),
+    );
 
     return null;
   }

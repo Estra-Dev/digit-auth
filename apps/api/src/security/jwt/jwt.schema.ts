@@ -7,6 +7,10 @@ export const jwtPayloadSchema = z.object({
     .refine((id) => Types.ObjectId.isValid(id), "Invalid ObjectId"),
 
   email: z.email(),
+
+  applicationId: z
+    .string()
+    .refine((id) => Types.ObjectId.isValid(id), "Invalid application ObjectId"),
 });
 
 export type JwtPayload = z.infer<typeof jwtPayloadSchema>;

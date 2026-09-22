@@ -15,11 +15,23 @@ function getParam(req: Request, name: string): string {
   return value;
 }
 
+function getApplicationId(req: Request) {
+  if (!req.application) {
+    throw new Error("Application context is required");
+  }
+
+  return req.application._id;
+}
+
 export const getUserSessions = asyncHandler(
   async (req: Request, res: Response) => {
+    const applicationId = getApplicationId(req);
     const userId = getParam(req, "userId");
 
-    const sessions = await adminSessionService.getUserSessions(userId);
+    const sessions = await adminSessionService.getUserSessions(
+      applicationId,
+      userId,
+    );
 
     return ApiResponse.success(res, {
       statusCode: 200,
@@ -31,10 +43,15 @@ export const getUserSessions = asyncHandler(
 
 export const revokeUserSession = asyncHandler(
   async (req: Request, res: Response) => {
+    const applicationId = getApplicationId(req);
     const userId = getParam(req, "userId");
     const sessionId = getParam(req, "sessionId");
 
-    await adminSessionService.revokeUserSession(userId, sessionId);
+    await adminSessionService.revokeUserSession(
+      applicationId,
+      userId,
+      sessionId,
+    );
 
     return ApiResponse.success(res, {
       statusCode: 200,
@@ -46,9 +63,10 @@ export const revokeUserSession = asyncHandler(
 
 export const revokeAllUserSessions = asyncHandler(
   async (req: Request, res: Response) => {
+    const applicationId = getApplicationId(req);
     const userId = getParam(req, "userId");
 
-    await adminSessionService.revokeAllUserSessions(userId);
+    await adminSessionService.revokeAllUserSessions(applicationId, userId);
 
     return ApiResponse.success(res, {
       statusCode: 200,

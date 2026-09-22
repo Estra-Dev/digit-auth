@@ -19,6 +19,7 @@ describe("POST /api/v1/auth/login", () => {
 
     const response = await request(app)
       .post("/api/v1/auth/login")
+      .set("X-DigitAuth-Client-Id", createdUser.clientId)
       .send(
         buildLoginPayload({
           email: createdUser.email,
@@ -37,6 +38,7 @@ describe("POST /api/v1/auth/login", () => {
     expect(response.body.data.refreshToken).toBeDefined();
 
     const sessions = await Session.find({
+      applicationId: createdUser.applicationId,
       userId: createdUser.user._id,
     }).select("+refreshTokenHash");
 
@@ -58,6 +60,7 @@ describe("POST /api/v1/auth/login", () => {
 
     const response = await request(app)
       .post("/api/v1/auth/login")
+      .set("X-DigitAuth-Client-Id", createdUser.clientId)
       .send(
         buildLoginPayload({
           email: createdUser.email,
@@ -73,8 +76,11 @@ describe("POST /api/v1/auth/login", () => {
   });
 
   it("should reject unknown email", async () => {
+    const createdUser = await createVerifiedUser();
+
     const response = await request(app)
       .post("/api/v1/auth/login")
+      .set("X-DigitAuth-Client-Id", createdUser.clientId)
       .send(
         buildLoginPayload({
           email: "unknown@example.com",
@@ -87,12 +93,19 @@ describe("POST /api/v1/auth/login", () => {
   });
 
   it("should reject unverified email", async () => {
+    const createdUser = await createVerifiedUser();
     const payload = buildRegisterPayload();
 
-    await request(app).post("/api/v1/auth/register").send(payload);
+    const registerResponse = await request(app)
+      .post("/api/v1/auth/register")
+      .set("X-DigitAuth-Client-Id", createdUser.clientId)
+      .send(payload);
+
+    expect(registerResponse.status).toBe(201);
 
     const response = await request(app)
       .post("/api/v1/auth/login")
+      .set("X-DigitAuth-Client-Id", createdUser.clientId)
       .send(
         buildLoginPayload({
           email: payload.email,

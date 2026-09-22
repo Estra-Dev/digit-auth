@@ -15,8 +15,10 @@ function getParam(req: Request, name: string): string {
 }
 
 export const listSecurityEvents = asyncHandler(
-  async (_req: Request, res: Response) => {
-    const events = await adminSecurityEventService.listEvents();
+  async (req: Request, res: Response) => {
+    const events = await adminSecurityEventService.listEvents(
+      req.application!._id,
+    );
 
     return ApiResponse.success(res, {
       statusCode: 200,
@@ -30,7 +32,10 @@ export const getUserSecurityEvents = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = getParam(req, "userId");
 
-    const events = await adminSecurityEventService.getUserEvents(userId);
+    const events = await adminSecurityEventService.getUserEvents(
+      req.application!._id,
+      userId,
+    );
 
     return ApiResponse.success(res, {
       statusCode: 200,

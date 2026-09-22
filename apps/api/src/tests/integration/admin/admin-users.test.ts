@@ -1,131 +1,91 @@
-import { Types } from "mongoose";
 import request from "supertest";
+import { Types } from "mongoose";
+import { describe, expect, it } from "vitest";
 
 import app from "../../helpers/app.js";
-import { createVerifiedUser } from "../../helpers/auth.helper.js";
+
 import { User } from "../../../modules/auth/model/user.model.js";
-import { UserRole } from "../../../authorization/roles.js";
-import { describe, expect, it } from "vitest";
+
+import {
+  authenticatedRequest,
+  loginAsAdmin,
+  loginAsVerifiedUser,
+} from "../../helpers/login.helper.js";
+import { createVerifiedUserInApplication } from "../../helpers/user.factory.js";
 
 describe("Admin User Management", () => {
   it("should allow an admin to access the user list", async () => {
-    const admin = await createVerifiedUser();
+    const admin = await loginAsAdmin();
 
-    await User.findByIdAndUpdate(admin.user.id, {
-      role: UserRole.ADMIN,
-    });
-
-    const loginResponse = await request(app).post("/api/v1/auth/login").send({
-      email: admin.email,
-      password: admin.password,
-    });
-
-    expect(loginResponse.status).toBe(200);
-
-    const accessToken = loginResponse.body.data.accessToken;
-
-    const response = await request(app)
-      .get("/api/v1/admin/users")
-      .set("Authorization", `Bearer ${accessToken}`);
+    const response = await authenticatedRequest(
+      admin.accessToken,
+      admin.clientId,
+    ).get("/api/v1/admin/users");
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
   });
 
   it("should reject a normal user from accessing admin users", async () => {
-    const user = await createVerifiedUser();
+    const user = await loginAsVerifiedUser();
 
-    const loginResponse = await request(app).post("/api/v1/auth/login").send({
-      email: user.email,
-      password: user.password,
-    });
-
-    expect(loginResponse.status).toBe(200);
-
-    const accessToken = loginResponse.body.data.accessToken;
-
-    const response = await request(app)
-      .get("/api/v1/admin/users")
-      .set("Authorization", `Bearer ${accessToken}`);
+    const response = await authenticatedRequest(
+      user.accessToken,
+      user.clientId,
+    ).get("/api/v1/admin/users");
 
     expect(response.status).toBe(403);
     expect(response.body.success).toBe(false);
   });
 
   it("should reject unauthenticated users", async () => {
-    const response = await request(app).get("/api/v1/admin/users");
+    const response = await authenticatedRequest(
+      "invalid-token",
+      "invalid-client-id",
+    ).get("/api/v1/admin/users");
 
     expect(response.status).toBe(401);
     expect(response.body.success).toBe(false);
   });
 
   it("should allow an admin to retrieve a user", async () => {
-    const admin = await createVerifiedUser();
-    const target = await createVerifiedUser();
+    const admin = await loginAsAdmin();
 
-    await User.findByIdAndUpdate(admin.user.id, {
-      role: UserRole.ADMIN,
-    });
+    const target = await createVerifiedUserInApplication(admin.applicationId);
 
-    const loginResponse = await request(app).post("/api/v1/auth/login").send({
-      email: admin.email,
-      password: admin.password,
-    });
-
-    expect(loginResponse.status).toBe(200);
-
-    const accessToken = loginResponse.body.data.accessToken;
-
-    const response = await request(app)
-      .get(`/api/v1/admin/users/${target.user.id}`)
-      .set("Authorization", `Bearer ${accessToken}`);
+    const response = await authenticatedRequest(
+      admin.accessToken,
+      admin.clientId,
+    ).get(`/api/v1/admin/users/${target.user.id}`);
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
   });
 
   it("should return 404 for a nonexistent user", async () => {
-    const admin = await createVerifiedUser();
-
-    await User.findByIdAndUpdate(admin.user.id, {
-      role: UserRole.ADMIN,
-    });
-
-    const loginResponse = await request(app).post("/api/v1/auth/login").send({
-      email: admin.email,
-      password: admin.password,
-    });
-
-    const accessToken = loginResponse.body.data.accessToken;
+    const admin = await loginAsAdmin();
 
     const fakeUserId = new Types.ObjectId().toString();
 
-    const response = await request(app)
-      .get(`/api/v1/admin/users/${fakeUserId}`)
-      .set("Authorization", `Bearer ${accessToken}`);
+    const response = await authenticatedRequest(
+      admin.accessToken,
+      admin.clientId,
+    ).get(`/api/v1/admin/users/${fakeUserId}`);
 
     expect(response.status).toBe(404);
     expect(response.body.success).toBe(false);
   });
 
   it("should allow an admin to update a user", async () => {
-    const admin = await createVerifiedUser();
-    const target = await createVerifiedUser();
+    const admin = await loginAsAdmin();
 
-    await User.findByIdAndUpdate(admin.user.id, {
-      role: UserRole.ADMIN,
-    });
+    const target = await createVerifiedUserInApplication(admin.applicationId);
 
-    const loginResponse = await request(app).post("/api/v1/auth/login").send({
-      email: admin.email,
-      password: admin.password,
-    });
-
-    const accessToken = loginResponse.body.data.accessToken;
-
-    const response = await request(app)
+    const response = await authenticatedRequest(
+      admin.accessToken,
+      admin.clientId,
+    )
       .patch(`/api/v1/admin/users/${target.user.id}`)
-      .set("Authorization", `Bearer ${accessToken}`)
       .send({
         firstName: "Updated",
         lastName: "User",
@@ -136,53 +96,52 @@ describe("Admin User Management", () => {
   });
 
   it("should allow an admin to delete a user", async () => {
-    const admin = await createVerifiedUser();
-    const target = await createVerifiedUser();
+    const admin = await loginAsAdmin();
 
-    await User.findByIdAndUpdate(admin.user.id, {
-      role: UserRole.ADMIN,
-    });
+    const target = await createVerifiedUserInApplication(admin.applicationId);
 
-    const loginResponse = await request(app).post("/api/v1/auth/login").send({
-      email: admin.email,
-      password: admin.password,
-    });
-
-    const accessToken = loginResponse.body.data.accessToken;
-
-    const response = await request(app)
-      .delete(`/api/v1/admin/users/${target.user.id}`)
-      .set("Authorization", `Bearer ${accessToken}`);
+    const response = await authenticatedRequest(
+      admin.accessToken,
+      admin.clientId,
+    ).delete(`/api/v1/admin/users/${target.user.id}`);
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
 
-    const deletedUser = await User.findById(target.user.id);
+    const deletedUser = await User.findOne({
+      _id: target.user.id,
+      applicationId: admin.applicationId,
+    });
 
     expect(deletedUser).toBeNull();
   });
 
   it("should reject an invalid user ID", async () => {
-    const admin = await createVerifiedUser();
+    const admin = await loginAsAdmin();
 
-    await User.findByIdAndUpdate(admin.user.id, {
-      role: UserRole.ADMIN,
-    });
-
-    const loginResponse = await request(app).post("/api/v1/auth/login").send({
-      email: admin.email,
-      password: admin.password,
-    });
-
-    expect(loginResponse.status).toBe(200);
-
-    const accessToken = loginResponse.body.data.accessToken;
-
-    const response = await request(app)
-      .get("/api/v1/admin/users/not-a-valid-id")
-      .set("Authorization", `Bearer ${accessToken}`);
+    const response = await authenticatedRequest(
+      admin.accessToken,
+      admin.clientId,
+    ).get("/api/v1/admin/users/not-a-valid-id");
 
     expect(response.status).toBe(500);
+    expect(response.body.success).toBe(false);
+  });
+
+  it("should not allow an admin to access a user from another application", async () => {
+    const admin = await loginAsAdmin();
+    const otherApplicationUser = await loginAsVerifiedUser();
+
+    expect(otherApplicationUser.applicationId.equals(admin.applicationId)).toBe(
+      false,
+    );
+
+    const response = await authenticatedRequest(
+      admin.accessToken,
+      admin.clientId,
+    ).get(`/api/v1/admin/users/${otherApplicationUser.user.id}`);
+
+    expect(response.status).toBe(404);
     expect(response.body.success).toBe(false);
   });
 });

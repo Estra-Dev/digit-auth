@@ -1,10 +1,10 @@
 import { Router } from "express";
 
-import { requireAuth } from "../../middlewares/require-auth.middleware.js";
-import { validate } from "../../middlewares/validate.middleware.js";
-
 import { Permission } from "../../authorization/permissions.js";
 import { requirePermission } from "../../authorization/require-permission.middleware.js";
+import { requireAuth } from "../../middlewares/require-auth.middleware.js";
+import { requireApplication } from "../application/middleware/require-application.middleware.js";
+import { validate } from "../../middlewares/validate.middleware.js";
 
 import {
   listUsers,
@@ -19,6 +19,8 @@ import {
 } from "./validators/admin-user.schema.js";
 
 const adminRouter = Router();
+
+adminRouter.use(requireApplication);
 
 adminRouter.get(
   "/users",

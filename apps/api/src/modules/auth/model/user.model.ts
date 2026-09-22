@@ -1,4 +1,4 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, Types } from "mongoose";
 import type { InferSchemaType, HydratedDocument } from "mongoose";
 import { UserRole } from "../../../authorization/roles.js";
 
@@ -10,6 +10,12 @@ export enum UserStatus {
 
 const userSchema = new Schema(
   {
+    applicationId: {
+      type: Types.ObjectId,
+      ref: "Application",
+      required: true,
+      index: true,
+    },
     firstName: {
       type: String,
       required: true,
@@ -23,7 +29,6 @@ const userSchema = new Schema(
     email: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
       lowercase: true,
     },
@@ -59,6 +64,16 @@ const userSchema = new Schema(
   {
     timestamps: true,
     versionKey: false,
+  },
+);
+
+userSchema.index(
+  {
+    applicationId: 1,
+    email: 1,
+  },
+  {
+    unique: true,
   },
 );
 

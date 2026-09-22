@@ -11,15 +11,19 @@ describe("POST /api/v1/auth/logout", () => {
   it("should logout successfully", async () => {
     const auth = await loginAsVerifiedUser();
 
-    const response = await request(app).post("/api/v1/auth/logout").send({
-      refreshToken: auth.refreshToken,
-    });
+    const response = await request(app)
+      .post("/api/v1/auth/logout")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
+      .send({
+        refreshToken: auth.refreshToken,
+      });
 
     expect(response.status).toBe(200);
 
     expect(response.body.success).toBe(true);
 
     const sessions = await Session.find({
+      applicationId: auth.applicationId,
       userId: auth.user._id,
     });
 
@@ -27,9 +31,14 @@ describe("POST /api/v1/auth/logout", () => {
   });
 
   it("should reject an invalid refresh token", async () => {
-    const response = await request(app).post("/api/v1/auth/logout").send({
-      refreshToken: "invalid-token",
-    });
+    const auth = await loginAsVerifiedUser();
+
+    const response = await request(app)
+      .post("/api/v1/auth/logout")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
+      .send({
+        refreshToken: "invalid-token",
+      });
 
     expect(response.status).toBe(401);
 

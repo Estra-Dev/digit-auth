@@ -5,9 +5,21 @@ import { asyncHandler } from "../../../utils/asyncHandler.js";
 
 import { profileService } from "../service/profile.service.js";
 
+function getApplicationId(req: Request) {
+  if (!req.application) {
+    throw new Error("Application context is required");
+  }
+
+  return req.application._id;
+}
+
 export const updateProfile = asyncHandler(
   async (req: Request, res: Response) => {
-    const user = await profileService.updateProfile(req.user!.id, req.body);
+    const user = await profileService.updateProfile(
+      getApplicationId(req),
+      req.user!.id,
+      req.body,
+    );
 
     return ApiResponse.success(res, {
       statusCode: 200,
@@ -19,7 +31,11 @@ export const updateProfile = asyncHandler(
 
 export const changePassword = asyncHandler(
   async (req: Request, res: Response) => {
-    await profileService.changePassword(req.user!.id, req.body);
+    await profileService.changePassword(
+      getApplicationId(req),
+      req.user!.id,
+      req.body,
+    );
 
     return ApiResponse.success(res, {
       statusCode: 200,
@@ -31,7 +47,7 @@ export const changePassword = asyncHandler(
 
 export const deleteAccount = asyncHandler(
   async (req: Request, res: Response) => {
-    await profileService.deleteAccount(req.user!.id);
+    await profileService.deleteAccount(getApplicationId(req), req.user!.id);
 
     return ApiResponse.success(res, {
       statusCode: 200,

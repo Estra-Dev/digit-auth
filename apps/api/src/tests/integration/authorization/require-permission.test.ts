@@ -20,6 +20,7 @@ describe("Require Permission Middleware", () => {
 
     const response = await request(app)
       .get("/api/v1/test/permission/profile")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
       .set("Authorization", `Bearer ${auth.accessToken}`);
 
     expect(response.status).toBe(200);
@@ -31,6 +32,7 @@ describe("Require Permission Middleware", () => {
 
     const response = await request(app)
       .get("/api/v1/test/permission/users")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
       .set("Authorization", `Bearer ${auth.accessToken}`);
 
     expect(response.status).toBe(403);
@@ -41,6 +43,7 @@ describe("Require Permission Middleware", () => {
 
     const response = await request(app)
       .get("/api/v1/test/permission/users")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
       .set("Authorization", `Bearer ${auth.accessToken}`);
 
     expect(response.status).toBe(200);

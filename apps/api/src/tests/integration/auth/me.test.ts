@@ -3,29 +3,21 @@ import { describe, expect, it } from "vitest";
 
 import app from "../../helpers/app.js";
 
-import {
-  buildLoginPayload,
-  buildRegisterPayload,
-} from "../../helpers/factories.js";
+import { createVerifiedUser } from "../../helpers/auth.helper.js";
 
 import { User, UserStatus } from "../../../modules/auth/model/user.model.js";
 
 describe("GET /api/v1/auth/me", () => {
   it("should return the current authenticated user", async () => {
-    const payload = buildRegisterPayload();
-
-    await request(app).post("/api/v1/auth/register").send(payload);
-
-    await User.updateOne({ email: payload.email }, { emailVerified: true });
+    const auth = await createVerifiedUser();
 
     const loginResponse = await request(app)
       .post("/api/v1/auth/login")
-      .send(
-        buildLoginPayload({
-          email: payload.email,
-          password: payload.password,
-        }),
-      );
+      .set("X-DigitAuth-Client-Id", auth.clientId)
+      .send({
+        email: auth.email,
+        password: auth.password,
+      });
 
     expect(loginResponse.status).toBe(200);
 
@@ -33,21 +25,26 @@ describe("GET /api/v1/auth/me", () => {
 
     const response = await request(app)
       .get("/api/v1/auth/me")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
       .set("Authorization", `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);
 
     expect(response.body.success).toBe(true);
 
-    expect(response.body.data.email).toBe(payload.email);
+    expect(response.body.data.email).toBe(auth.email);
 
-    expect(response.body.data.firstName).toBe(payload.firstName);
+    expect(response.body.data.firstName).toBe(auth.user.firstName);
 
-    expect(response.body.data.lastName).toBe(payload.lastName);
+    expect(response.body.data.lastName).toBe(auth.user.lastName);
   });
 
   it("should reject requests without an access token", async () => {
-    const response = await request(app).get("/api/v1/auth/me");
+    const auth = await createVerifiedUser();
+
+    const response = await request(app)
+      .get("/api/v1/auth/me")
+      .set("X-DigitAuth-Client-Id", auth.clientId);
 
     expect(response.status).toBe(401);
 
@@ -55,8 +52,11 @@ describe("GET /api/v1/auth/me", () => {
   });
 
   it("should reject invalid access tokens", async () => {
+    const auth = await createVerifiedUser();
+
     const response = await request(app)
       .get("/api/v1/auth/me")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
       .set("Authorization", "Bearer invalid-token");
 
     expect(response.status).toBe(401);
@@ -65,33 +65,28 @@ describe("GET /api/v1/auth/me", () => {
   });
 
   it("should reject deleted users", async () => {
-    const payload = buildRegisterPayload();
-
-    await request(app).post("/api/v1/auth/register").send(payload);
-
-    await User.updateOne({ email: payload.email }, { emailVerified: true });
+    const auth = await createVerifiedUser();
 
     const login = await request(app)
       .post("/api/v1/auth/login")
-      .send(
-        buildLoginPayload({
-          email: payload.email,
-          password: payload.password,
-        }),
-      );
+      .set("X-DigitAuth-Client-Id", auth.clientId)
+      .send({
+        email: auth.email,
+        password: auth.password,
+      });
+
+    expect(login.status).toBe(200);
 
     const accessToken = login.body.data.accessToken;
 
-    const user = await User.findOne({
-      email: payload.email,
-    });
-
     await User.deleteOne({
-      _id: user!._id,
+      _id: auth.user._id,
+      applicationId: auth.applicationId,
     });
 
     const response = await request(app)
       .get("/api/v1/auth/me")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
       .set("Authorization", `Bearer ${accessToken}`);
 
     expect(response.status).toBe(404);
@@ -100,31 +95,33 @@ describe("GET /api/v1/auth/me", () => {
   });
 
   it("should reject inactive users", async () => {
-    const payload = buildRegisterPayload();
-
-    await request(app).post("/api/v1/auth/register").send(payload);
+    const auth = await createVerifiedUser();
 
     await User.updateOne(
-      { email: payload.email },
       {
-        emailVerified: true,
+        _id: auth.user._id,
+        applicationId: auth.applicationId,
+      },
+      {
         status: UserStatus.DEACTIVATED,
       },
     );
 
     const login = await request(app)
       .post("/api/v1/auth/login")
-      .send(
-        buildLoginPayload({
-          email: payload.email,
-          password: payload.password,
-        }),
-      );
+      .set("X-DigitAuth-Client-Id", auth.clientId)
+      .send({
+        email: auth.email,
+        password: auth.password,
+      });
+
+    expect(login.status).toBe(200);
 
     const accessToken = login.body.data.accessToken;
 
     const response = await request(app)
       .get("/api/v1/auth/me")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
       .set("Authorization", `Bearer ${accessToken}`);
 
     expect(response.status).toBe(403);

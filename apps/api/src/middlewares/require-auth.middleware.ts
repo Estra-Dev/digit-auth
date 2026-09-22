@@ -1,15 +1,24 @@
 import type { NextFunction, Request, Response } from "express";
+
 import { AppError } from "../core/errors/AppError.js";
+
 import { jwtService } from "../security/index.js";
+
 import { userRepository } from "../modules/auth/repositories/user.repository.js";
+
 import { UserStatus } from "../modules/auth/model/user.model.js";
+
 import { UserMapper } from "../modules/auth/mapper/user.mapper.js";
 
 export async function requireAuth(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction,
 ) {
+  if (!req.application) {
+    throw new AppError("Application context is required.", 401, true);
+  }
+
   const authorization = req.headers.authorization;
 
   if (!authorization) {
@@ -30,14 +39,22 @@ export async function requireAuth(
     throw new AppError("Invalid or expired access token.", 401, true);
   }
 
-  if (!payload.sub) {
+  if (!payload.sub || !payload.applicationId) {
     throw new AppError("Invalid access token.", 401, true);
+  }
+
+  if (payload.applicationId !== req.application._id.toString()) {
+    throw new AppError("Invalid authentication context.", 401, true);
   }
 
   const user = await userRepository.findById(payload.sub);
 
   if (!user) {
     throw new AppError("User not found", 404, true);
+  }
+
+  if (!user.applicationId.equals(req.application._id)) {
+    throw new AppError("Invalid authentication context.", 401, true);
   }
 
   if (user.status !== UserStatus.ACTIVE) {

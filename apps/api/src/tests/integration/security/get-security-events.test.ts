@@ -11,6 +11,7 @@ describe("GET /api/v1/security/events", () => {
 
     const response = await request(app)
       .get("/api/v1/security/events")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
       .set("Authorization", `Bearer ${auth.accessToken}`);
 
     expect(response.status).toBe(200);
@@ -34,10 +35,12 @@ describe("GET /api/v1/security/events", () => {
 
     const firstResponse = await request(app)
       .get("/api/v1/security/events")
+      .set("X-DigitAuth-Client-Id", firstUser.clientId)
       .set("Authorization", `Bearer ${firstUser.accessToken}`);
 
     const secondResponse = await request(app)
       .get("/api/v1/security/events")
+      .set("X-DigitAuth-Client-Id", secondUser.clientId)
       .set("Authorization", `Bearer ${secondUser.accessToken}`);
 
     expect(firstResponse.status).toBe(200);

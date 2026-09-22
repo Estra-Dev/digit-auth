@@ -2,48 +2,48 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 
 import app from "../../helpers/app.js";
-import {
-  buildLoginPayload,
-  buildRegisterPayload,
-} from "../../helpers/factories.js";
+import { createVerifiedUser } from "../../helpers/auth.helper.js";
 
 import { User } from "../../../modules/auth/model/user.model.js";
 import { UserRole } from "../../../authorization/roles.js";
 
 describe("Authorization (Role Middleware)", () => {
   async function createUserAndLogin(role: UserRole = UserRole.USER) {
-    const payload = buildRegisterPayload();
-
-    await request(app).post("/api/v1/auth/register").send(payload);
+    const auth = await createVerifiedUser();
 
     await User.updateOne(
-      { email: payload.email },
       {
-        emailVerified: true,
+        _id: auth.user._id,
+        applicationId: auth.applicationId,
+      },
+      {
         role,
       },
     );
 
     const login = await request(app)
       .post("/api/v1/auth/login")
-      .send(
-        buildLoginPayload({
-          email: payload.email,
-          password: payload.password,
-        }),
-      );
+      .set("X-DigitAuth-Client-Id", auth.clientId)
+      .send({
+        email: auth.email,
+        password: auth.password,
+      });
 
     expect(login.status).toBe(200);
 
-    return login.body.data.accessToken;
+    return {
+      accessToken: login.body.data.accessToken,
+      clientId: auth.clientId,
+    };
   }
 
   it("should allow ADMIN users", async () => {
-    const accessToken = await createUserAndLogin(UserRole.ADMIN);
+    const auth = await createUserAndLogin(UserRole.ADMIN);
 
     const response = await request(app)
       .get("/api/v1/test/admin")
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("X-DigitAuth-Client-Id", auth.clientId)
+      .set("Authorization", `Bearer ${auth.accessToken}`);
 
     expect(response.status).toBe(200);
 
@@ -51,11 +51,12 @@ describe("Authorization (Role Middleware)", () => {
   });
 
   it("should reject USER access to ADMIN routes", async () => {
-    const accessToken = await createUserAndLogin(UserRole.USER);
+    const auth = await createUserAndLogin(UserRole.USER);
 
     const response = await request(app)
       .get("/api/v1/test/admin")
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("X-DigitAuth-Client-Id", auth.clientId)
+      .set("Authorization", `Bearer ${auth.accessToken}`);
 
     expect(response.status).toBe(403);
 
@@ -63,7 +64,11 @@ describe("Authorization (Role Middleware)", () => {
   });
 
   it("should reject requests without authentication", async () => {
-    const response = await request(app).get("/api/v1/test/admin");
+    const auth = await createVerifiedUser();
+
+    const response = await request(app)
+      .get("/api/v1/test/admin")
+      .set("X-DigitAuth-Client-Id", auth.clientId);
 
     expect(response.status).toBe(401);
 
@@ -71,8 +76,11 @@ describe("Authorization (Role Middleware)", () => {
   });
 
   it("should reject invalid tokens", async () => {
+    const auth = await createVerifiedUser();
+
     const response = await request(app)
       .get("/api/v1/test/admin")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
       .set("Authorization", "Bearer invalid-token");
 
     expect(response.status).toBe(401);

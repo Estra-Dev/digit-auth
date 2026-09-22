@@ -1,15 +1,15 @@
-import type { Request, Response } from "express";
-
 import { ApiResponse } from "../../../core/response/ApiResponse.js";
+
 import { asyncHandler } from "../../../utils/asyncHandler.js";
+
 import { adminUserService } from "../service/admin-user.service.js";
 
-type UserParams = {
-  id?: string;
-};
+export const listUsers = asyncHandler(async (req, res) => {
+  if (!req.application) {
+    throw new Error("Application context is required");
+  }
 
-export const listUsers = asyncHandler(async (_req, res) => {
-  const users = await adminUserService.listUsers();
+  const users = await adminUserService.listUsers(req.application._id);
 
   return ApiResponse.success(res, {
     statusCode: 200,
@@ -19,13 +19,17 @@ export const listUsers = asyncHandler(async (_req, res) => {
 });
 
 export const getUser = asyncHandler(async (req, res) => {
+  if (!req.application) {
+    throw new Error("Application context is required");
+  }
+
   const id = req.params.id;
 
   if (typeof id !== "string") {
     throw new Error("Invalid user ID");
   }
 
-  const user = await adminUserService.getUser(id);
+  const user = await adminUserService.getUser(req.application._id, id);
 
   return ApiResponse.success(res, {
     statusCode: 200,
@@ -34,14 +38,25 @@ export const getUser = asyncHandler(async (req, res) => {
   });
 });
 
-export const updateUser = asyncHandler(async (req: Request, res) => {
+export const updateUser = asyncHandler(async (req, res) => {
+  if (!req.application) {
+    throw new Error("Application context is required");
+  }
+
   const id = req.params.id;
 
   if (typeof id !== "string") {
     throw new Error("Invalid user ID");
   }
 
-  const user = await adminUserService.updateUser(id, req.body);
+  const body = req.body as {
+    firstName?: string;
+    lastName?: string;
+    role?: string;
+    status?: string;
+  };
+
+  const user = await adminUserService.updateUser(req.application._id, id, body);
 
   return ApiResponse.success(res, {
     statusCode: 200,
@@ -51,13 +66,17 @@ export const updateUser = asyncHandler(async (req: Request, res) => {
 });
 
 export const deleteUser = asyncHandler(async (req, res) => {
+  if (!req.application) {
+    throw new Error("Application context is required");
+  }
+
   const id = req.params.id;
 
   if (typeof id !== "string") {
     throw new Error("Invalid user ID");
   }
 
-  await adminUserService.deleteUser(id);
+  await adminUserService.deleteUser(req.application._id, id);
 
   return ApiResponse.success(res, {
     statusCode: 200,

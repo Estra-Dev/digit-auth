@@ -1,19 +1,28 @@
+import { Types } from "mongoose";
+
 import { User } from "../../auth/model/user.model.js";
 
 export class ProfileRepository {
-  async findById(userId: string) {
-    return User.findById(userId).select("+passwordHashed");
+  async findById(applicationId: Types.ObjectId, userId: string) {
+    return User.findOne({
+      _id: userId,
+      applicationId,
+    }).select("+passwordHashed");
   }
 
   async updateById(
+    applicationId: Types.ObjectId,
     userId: string,
     data: {
       firstName?: string;
       lastName?: string;
     },
   ) {
-    return User.findByIdAndUpdate(
-      userId,
+    return User.findOneAndUpdate(
+      {
+        _id: userId,
+        applicationId,
+      },
       {
         $set: data,
       },
@@ -24,9 +33,16 @@ export class ProfileRepository {
     );
   }
 
-  async updatePassword(userId: string, passwordHashed: string) {
-    return User.findByIdAndUpdate(
-      userId,
+  async updatePassword(
+    applicationId: Types.ObjectId,
+    userId: string,
+    passwordHashed: string,
+  ) {
+    return User.findOneAndUpdate(
+      {
+        _id: userId,
+        applicationId,
+      },
       {
         $set: {
           passwordHashed,
@@ -39,8 +55,11 @@ export class ProfileRepository {
     );
   }
 
-  async deleteById(userId: string) {
-    return User.findByIdAndDelete(userId);
+  async deleteById(applicationId: Types.ObjectId, userId: string) {
+    return User.findOneAndDelete({
+      _id: userId,
+      applicationId,
+    });
   }
 }
 

@@ -2,10 +2,7 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 
 import app from "../../helpers/app.js";
-import {
-  buildLoginPayload,
-  buildRegisterPayload,
-} from "../../helpers/factories.js";
+import { buildLoginPayload } from "../../helpers/factories.js";
 import { createVerifiedUser } from "../../helpers/auth.helper.js";
 import { User } from "../../../modules/auth/model/user.model.js";
 
@@ -18,6 +15,7 @@ describe("POST /api/v1/auth/login - Account Lock", () => {
     for (let attempt = 1; attempt <= 5; attempt++) {
       const response = await request(app)
         .post("/api/v1/auth/login")
+        .set("X-DigitAuth-Client-Id", createdUser.clientId)
         .send(
           buildLoginPayload({
             email: createdUser.email,
@@ -35,6 +33,8 @@ describe("POST /api/v1/auth/login - Account Lock", () => {
     }
 
     const user = await User.findOne({
+      _id: createdUser.user._id,
+      applicationId: createdUser.applicationId,
       email: createdUser.email,
     });
 
@@ -48,7 +48,11 @@ describe("POST /api/v1/auth/login - Account Lock", () => {
     const createdUser = await createVerifiedUser();
 
     await User.updateOne(
-      { email: createdUser.email },
+      {
+        _id: createdUser.user._id,
+        applicationId: createdUser.applicationId,
+        email: createdUser.email,
+      },
       {
         failedLoginAttempts: 5,
         lockedUntil: new Date(Date.now() + 15 * 60 * 1000),
@@ -57,6 +61,7 @@ describe("POST /api/v1/auth/login - Account Lock", () => {
 
     const response = await request(app)
       .post("/api/v1/auth/login")
+      .set("X-DigitAuth-Client-Id", createdUser.clientId)
       .send(
         buildLoginPayload({
           email: createdUser.email,
@@ -73,7 +78,11 @@ describe("POST /api/v1/auth/login - Account Lock", () => {
     const createdUser = await createVerifiedUser();
 
     await User.updateOne(
-      { email: createdUser.email },
+      {
+        _id: createdUser.user._id,
+        applicationId: createdUser.applicationId,
+        email: createdUser.email,
+      },
       {
         failedLoginAttempts: 3,
       },
@@ -81,6 +90,7 @@ describe("POST /api/v1/auth/login - Account Lock", () => {
 
     const response = await request(app)
       .post("/api/v1/auth/login")
+      .set("X-DigitAuth-Client-Id", createdUser.clientId)
       .send(
         buildLoginPayload({
           email: createdUser.email,
@@ -91,6 +101,8 @@ describe("POST /api/v1/auth/login - Account Lock", () => {
     expect(response.status).toBe(200);
 
     const user = await User.findOne({
+      _id: createdUser.user._id,
+      applicationId: createdUser.applicationId,
       email: createdUser.email,
     });
 

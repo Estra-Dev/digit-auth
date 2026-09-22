@@ -6,8 +6,8 @@ import { asyncHandler } from "../../../utils/asyncHandler.js";
 import { adminAuditService } from "../service/admin-audit.service.js";
 
 export const listAuditLogs = asyncHandler(
-  async (_req: Request, res: Response) => {
-    const logs = await adminAuditService.listLogs();
+  async (req: Request, res: Response) => {
+    const logs = await adminAuditService.listLogs(req.application!._id);
 
     return ApiResponse.success(res, {
       statusCode: 200,

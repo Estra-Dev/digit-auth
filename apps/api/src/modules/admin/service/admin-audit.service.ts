@@ -1,8 +1,10 @@
+import { Types } from "mongoose";
+
 import { auditRepository } from "../../audit/repository/audit.repository.js";
 
 class AdminAuditService {
-  async listLogs() {
-    return auditRepository.findAll();
+  async listLogs(applicationId: Types.ObjectId) {
+    return auditRepository.findAll(applicationId);
   }
 }
 

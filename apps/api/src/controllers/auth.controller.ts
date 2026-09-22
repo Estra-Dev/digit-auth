@@ -3,19 +3,28 @@ import { parseRequest } from "../core/validation/parseRequest.js";
 import { authService } from "../services/auth.service.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { type Request, type Response } from "express";
+
 import { registerSchema } from "../validators/auth.validator.js";
-import { logoutSchema } from "../validators/logout.schema.js";
-import { UserMapper } from "../modules/auth/mapper/user.mapper.js";
 import { verifyEmailSchema } from "../validators/verify-email.schema.js";
 
 type SessionParams = {
   id: string;
 };
 
+function getApplicationId(req: Request) {
+  if (!req.application) {
+    throw new Error("Application context is required");
+  }
+
+  return req.application._id;
+}
+
 export const register = asyncHandler(async (req: Request, res: Response) => {
+  const applicationId = getApplicationId(req);
+
   const body = parseRequest(registerSchema, req.body);
 
-  const user = await authService.register(body);
+  const user = await authService.register(applicationId, body);
 
   return ApiResponse.success(res, {
     statusCode: 201,
@@ -24,8 +33,10 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-export const login = asyncHandler(async (req: Request, res) => {
-  const result = await authService.login(req.body);
+export const login = asyncHandler(async (req: Request, res: Response) => {
+  const applicationId = getApplicationId(req);
+
+  const result = await authService.login(applicationId, req.body);
 
   return ApiResponse.success(res, {
     statusCode: 200,
@@ -36,9 +47,9 @@ export const login = asyncHandler(async (req: Request, res) => {
 
 export const refreshToken = asyncHandler(
   async (req: Request, res: Response) => {
-    // const { refreshToken } = req.body;
+    const applicationId = getApplicationId(req);
 
-    const result = await authService.refreshToken(req.body);
+    const result = await authService.refreshToken(applicationId, req.body);
 
     return ApiResponse.success(res, {
       statusCode: 200,
@@ -48,20 +59,10 @@ export const refreshToken = asyncHandler(
   },
 );
 
-// export const logout = asyncHandler(async (req: Request, res: Response) => {
-//   // const { refreshToken } = req.body;
-//   const body = parseRequest(logoutSchema, req.body);
-
-//   await authService.logout(body);
-
-//   return ApiResponse.success(res, {
-//     statusCode: 200,
-//     message: "Logged Out Successfully",
-//     data: null,
-//   });
-// });
 export const logout = asyncHandler(async (req: Request, res: Response) => {
-  await authService.logout(req.body);
+  const applicationId = getApplicationId(req);
+
+  await authService.logout(applicationId, req.body);
 
   return ApiResponse.success(res, {
     statusCode: 200,
@@ -71,10 +72,9 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const logoutAll = asyncHandler(async (req: Request, res: Response) => {
-  // const { refreshToken } = req.body;
-  // const body = parseRequest(logoutSchema, req.body);
+  const applicationId = getApplicationId(req);
 
-  await authService.logoutAll(req.body);
+  await authService.logoutAll(applicationId, req.body);
 
   return ApiResponse.success(res, {
     statusCode: 200,
@@ -84,9 +84,11 @@ export const logoutAll = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
+  const applicationId = getApplicationId(req);
+
   const body = parseRequest(verifyEmailSchema, req.body);
 
-  await authService.verifyEmail(body.token);
+  await authService.verifyEmail(applicationId, body.token);
 
   return ApiResponse.success(res, {
     statusCode: 200,
@@ -97,9 +99,11 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 
 export const resendVerificationEmail = asyncHandler(
   async (req: Request, res: Response) => {
+    const applicationId = getApplicationId(req);
+
     const { email } = req.body;
 
-    await authService.resendVerificationEmail(email);
+    await authService.resendVerificationEmail(applicationId, email);
 
     return ApiResponse.success(res, {
       statusCode: 200,
@@ -111,9 +115,11 @@ export const resendVerificationEmail = asyncHandler(
 
 export const forgotPassword = asyncHandler(
   async (req: Request, res: Response) => {
+    const applicationId = getApplicationId(req);
+
     const { email } = req.body;
 
-    const result = await authService.forgotPassword(email);
+    const result = await authService.forgotPassword(applicationId, email);
 
     return ApiResponse.success(res, {
       statusCode: 200,
@@ -125,7 +131,9 @@ export const forgotPassword = asyncHandler(
 
 export const resetPassword = asyncHandler(
   async (req: Request, res: Response) => {
-    await authService.resetPassword(req.body);
+    const applicationId = getApplicationId(req);
+
+    await authService.resetPassword(applicationId, req.body);
 
     return ApiResponse.success(res, {
       statusCode: 200,
@@ -137,8 +145,6 @@ export const resetPassword = asyncHandler(
 
 export const getCurrentUser = asyncHandler(
   async (req: Request, res: Response) => {
-    // const user = await authService.getCurrentUser(req.user!.id);
-
     return ApiResponse.success(res, {
       statusCode: 200,
       message: "Current user retrieved successfully.",
@@ -147,19 +153,28 @@ export const getCurrentUser = asyncHandler(
   },
 );
 
-export const getMySessions = asyncHandler(async (req, res) => {
-  const sessions = await authService.getMySessions(req.user!.id);
+export const getMySessions = asyncHandler(
+  async (req: Request, res: Response) => {
+    const applicationId = getApplicationId(req);
 
-  return ApiResponse.success(res, {
-    statusCode: 200,
-    message: "Sessions retrieved successfully.",
-    data: sessions,
-  });
-});
+    const sessions = await authService.getMySessions(
+      applicationId,
+      req.user!.id,
+    );
+
+    return ApiResponse.success(res, {
+      statusCode: 200,
+      message: "Sessions retrieved successfully.",
+      data: sessions,
+    });
+  },
+);
 
 export const revokeSession = asyncHandler(
-  async (req: Request<SessionParams>, res) => {
-    await authService.revokeSession(req.user!.id, req.params.id);
+  async (req: Request<SessionParams>, res: Response) => {
+    const applicationId = getApplicationId(req);
+
+    await authService.revokeSession(applicationId, req.user!.id, req.params.id);
 
     return ApiResponse.success(res, {
       statusCode: 200,
@@ -170,17 +185,14 @@ export const revokeSession = asyncHandler(
 );
 
 export const revokeOtherSessions = asyncHandler(
-  async (req: Request<{}, {}, { refreshToken: string }>, res) => {
-    console.log("===== REVOKE OTHER SESSIONS CONTROLLER START =====");
+  async (req: Request<{}, {}, { refreshToken: string }>, res: Response) => {
+    const applicationId = getApplicationId(req);
 
-    console.log("REQ USER:", req.user);
-    console.log("REFRESH TOKEN PRESENT:", !!req.body.refreshToken);
-
-    console.log("CALLING AUTH SERVICE...");
-
-    await authService.revokeOtherSessions(req.user!.id, req.body.refreshToken);
-
-    console.log("AUTH SERVICE COMPLETED");
+    await authService.revokeOtherSessions(
+      applicationId,
+      req.user!.id,
+      req.body.refreshToken,
+    );
 
     return ApiResponse.success(res, {
       statusCode: 200,

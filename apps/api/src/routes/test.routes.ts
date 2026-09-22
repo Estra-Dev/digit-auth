@@ -6,20 +6,26 @@ import { UserRole } from "../authorization/roles.js";
 import { Permission } from "../authorization/permissions.js";
 import { requirePermission } from "../authorization/require-permission.middleware.js";
 import { requireOwner } from "../authorization/ownership/require-owner.middleware.js";
-
-// import { UserRole } from "../modules/auth/model/user.model.js";
+import { requireApplication } from "../modules/application/middleware/require-application.middleware.js";
 
 const router = Router();
 
-router.get("/admin", requireAuth, requireRole(UserRole.ADMIN), (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Admin Access Granted",
-  });
-});
+router.get(
+  "/admin",
+  requireApplication,
+  requireAuth,
+  requireRole(UserRole.ADMIN),
+  (req, res) => {
+    res.status(200).json({
+      success: true,
+      message: "Admin Access Granted",
+    });
+  },
+);
 
 router.get(
   "/permission/profile",
+  requireApplication,
   requireAuth,
   requirePermission(Permission.PROFILE_READ),
   (_req, res) => {
@@ -32,6 +38,7 @@ router.get(
 
 router.get(
   "/permission/users",
+  requireApplication,
   requireAuth,
   requirePermission(Permission.USER_READ),
   (_req, res) => {
@@ -44,6 +51,7 @@ router.get(
 
 router.get(
   "/owner/:id",
+  requireApplication,
   requireAuth,
   requireOwner((req) => req.params.id as string),
   (req, res) => {

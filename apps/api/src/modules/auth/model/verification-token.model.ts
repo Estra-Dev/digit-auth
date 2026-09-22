@@ -8,18 +8,27 @@ import {
 
 const verificationTokenSchema = new Schema(
   {
+    applicationId: {
+      type: Types.ObjectId,
+      ref: "Application",
+      required: true,
+      index: true,
+    },
+
     userId: {
       type: Types.ObjectId,
       ref: "User",
       required: true,
       index: true,
     },
+
     tokenHash: {
       type: String,
       required: true,
       unique: true,
       select: false,
     },
+
     expiresAt: {
       type: Date,
       required: true,
@@ -31,8 +40,12 @@ const verificationTokenSchema = new Schema(
   },
 );
 
-// Automatically remove expired documents
 verificationTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+verificationTokenSchema.index({
+  applicationId: 1,
+  userId: 1,
+});
 
 export type VerificationTokenSchema = InferSchemaType<
   typeof verificationTokenSchema

@@ -5,6 +5,7 @@ import { AuditEvent } from "../types/audit-event.js";
 
 class AuditService {
   async log(data: {
+    applicationId: Types.ObjectId;
     userId: string;
     event: AuditEvent;
     ipAddress?: string | null;
@@ -12,6 +13,7 @@ class AuditService {
     metadata?: Record<string, unknown>;
   }) {
     await auditRepository.create({
+      applicationId: data.applicationId,
       userId: new Types.ObjectId(data.userId),
       event: data.event,
 
@@ -29,8 +31,8 @@ class AuditService {
     });
   }
 
-  async getAllLogs() {
-    return auditRepository.findAll();
+  async getAllLogs(applicationId: Types.ObjectId) {
+    return auditRepository.findAll(applicationId);
   }
 }
 

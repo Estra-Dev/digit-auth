@@ -19,6 +19,7 @@ describe("Require Owner Middleware", () => {
 
     const response = await request(app)
       .get(`/api/v1/test/owner/${auth.user.id}`)
+      .set("X-DigitAuth-Client-Id", auth.clientId)
       .set("Authorization", `Bearer ${auth.accessToken}`);
 
     expect(response.status).toBe(200);
@@ -30,6 +31,7 @@ describe("Require Owner Middleware", () => {
 
     const response = await request(app)
       .get("/api/v1/test/owner/some-random-id")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
       .set("Authorization", `Bearer ${auth.accessToken}`);
 
     expect(response.status).toBe(403);
@@ -40,6 +42,7 @@ describe("Require Owner Middleware", () => {
 
     const response = await request(app)
       .get("/api/v1/test/owner/anything")
+      .set("X-DigitAuth-Client-Id", admin.clientId)
       .set("Authorization", `Bearer ${admin.accessToken}`);
 
     expect(response.status).toBe(200);

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import app from "../../helpers/app.js";
 
+import { createVerifiedUser } from "../../helpers/user.factory.js";
 import { loginAsVerifiedUser } from "../../helpers/login.helper.js";
 
 import { Session } from "../../../modules/auth/model/session.model.js";
@@ -13,9 +14,12 @@ describe("POST /api/v1/auth/refresh", () => {
   it("should refresh tokens successfully", async () => {
     const auth = await loginAsVerifiedUser();
 
-    const response = await request(app).post("/api/v1/auth/refresh").send({
-      refreshToken: auth.refreshToken,
-    });
+    const response = await request(app)
+      .post("/api/v1/auth/refresh")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
+      .send({
+        refreshToken: auth.refreshToken,
+      });
 
     expect(response.status).toBe(200);
 
@@ -31,9 +35,12 @@ describe("POST /api/v1/auth/refresh", () => {
   it("should rotate the refresh token and replace the stored session", async () => {
     const auth = await loginAsVerifiedUser();
 
-    const firstRefresh = await request(app).post("/api/v1/auth/refresh").send({
-      refreshToken: auth.refreshToken,
-    });
+    const firstRefresh = await request(app)
+      .post("/api/v1/auth/refresh")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
+      .send({
+        refreshToken: auth.refreshToken,
+      });
 
     expect(firstRefresh.status).toBe(200);
 
@@ -44,6 +51,7 @@ describe("POST /api/v1/auth/refresh", () => {
     expect(newRefreshToken).not.toBe(auth.refreshToken);
 
     const sessions = await Session.find({
+      applicationId: auth.applicationId,
       userId: auth.user._id,
     }).select("+refreshTokenHash");
 
@@ -63,14 +71,18 @@ describe("POST /api/v1/auth/refresh", () => {
   it("should reject reuse of the old refresh token", async () => {
     const auth = await loginAsVerifiedUser();
 
-    const firstRefresh = await request(app).post("/api/v1/auth/refresh").send({
-      refreshToken: auth.refreshToken,
-    });
+    const firstRefresh = await request(app)
+      .post("/api/v1/auth/refresh")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
+      .send({
+        refreshToken: auth.refreshToken,
+      });
 
     expect(firstRefresh.status).toBe(200);
 
     const reusedResponse = await request(app)
       .post("/api/v1/auth/refresh")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
       .send({
         refreshToken: auth.refreshToken,
       });
@@ -83,17 +95,23 @@ describe("POST /api/v1/auth/refresh", () => {
   it("should allow the newly issued refresh token to be used", async () => {
     const auth = await loginAsVerifiedUser();
 
-    const firstRefresh = await request(app).post("/api/v1/auth/refresh").send({
-      refreshToken: auth.refreshToken,
-    });
+    const firstRefresh = await request(app)
+      .post("/api/v1/auth/refresh")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
+      .send({
+        refreshToken: auth.refreshToken,
+      });
 
     expect(firstRefresh.status).toBe(200);
 
     const newRefreshToken = firstRefresh.body.data.refreshToken;
 
-    const secondRefresh = await request(app).post("/api/v1/auth/refresh").send({
-      refreshToken: newRefreshToken,
-    });
+    const secondRefresh = await request(app)
+      .post("/api/v1/auth/refresh")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
+      .send({
+        refreshToken: newRefreshToken,
+      });
 
     expect(secondRefresh.status).toBe(200);
 
@@ -105,9 +123,14 @@ describe("POST /api/v1/auth/refresh", () => {
   });
 
   it("should reject an invalid refresh token", async () => {
-    const response = await request(app).post("/api/v1/auth/refresh").send({
-      refreshToken: "invalid-token",
-    });
+    const auth = await createVerifiedUser();
+
+    const response = await request(app)
+      .post("/api/v1/auth/refresh")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
+      .send({
+        refreshToken: "invalid-token",
+      });
 
     expect(response.status).toBe(401);
 
@@ -117,19 +140,26 @@ describe("POST /api/v1/auth/refresh", () => {
   it("should keep only one session after multiple rotations", async () => {
     const auth = await loginAsVerifiedUser();
 
-    const firstRefresh = await request(app).post("/api/v1/auth/refresh").send({
-      refreshToken: auth.refreshToken,
-    });
+    const firstRefresh = await request(app)
+      .post("/api/v1/auth/refresh")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
+      .send({
+        refreshToken: auth.refreshToken,
+      });
 
     expect(firstRefresh.status).toBe(200);
 
-    const secondRefresh = await request(app).post("/api/v1/auth/refresh").send({
-      refreshToken: firstRefresh.body.data.refreshToken,
-    });
+    const secondRefresh = await request(app)
+      .post("/api/v1/auth/refresh")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
+      .send({
+        refreshToken: firstRefresh.body.data.refreshToken,
+      });
 
     expect(secondRefresh.status).toBe(200);
 
     const sessions = await Session.find({
+      applicationId: auth.applicationId,
       userId: auth.user._id,
     });
 

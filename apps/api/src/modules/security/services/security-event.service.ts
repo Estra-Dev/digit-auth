@@ -5,6 +5,7 @@ import { SecurityEvent } from "../types/security-event.js";
 
 class SecurityEventService {
   async log(data: {
+    applicationId: Types.ObjectId;
     userId: string;
     event: SecurityEvent;
     ipAddress?: string | null;
@@ -12,6 +13,7 @@ class SecurityEventService {
     metadata?: Record<string, unknown>;
   }) {
     await securityEventRepository.create({
+      applicationId: data.applicationId,
       userId: new Types.ObjectId(data.userId),
 
       event: data.event,
@@ -30,12 +32,15 @@ class SecurityEventService {
     });
   }
 
-  async getUserEvents(userId: string) {
-    return securityEventRepository.findByUser(new Types.ObjectId(userId));
+  async getUserEvents(applicationId: Types.ObjectId, userId: string) {
+    return securityEventRepository.findByUser(
+      applicationId,
+      new Types.ObjectId(userId),
+    );
   }
 
-  async getAllEvents() {
-    return securityEventRepository.findAll();
+  async getAllEvents(applicationId: Types.ObjectId) {
+    return securityEventRepository.findAll(applicationId);
   }
 }
 

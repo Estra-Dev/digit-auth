@@ -11,9 +11,14 @@ export class SecurityLogger {
     event: SecurityEvent,
     metadata?: Record<string, unknown>,
   ) {
+    if (!req.application) {
+      throw new Error("Application context is required");
+    }
+
     const { ipAddress, userAgent } = getRequestContext(req);
 
     await securityEventService.log({
+      applicationId: req.application._id,
       userId,
       event,
       ipAddress,

@@ -20,6 +20,7 @@ describe("Require Role Middleware", () => {
 
     const response = await request(app)
       .get("/api/v1/test/admin")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
       .set("Authorization", `Bearer ${auth.accessToken}`);
 
     expect(response.status).toBe(403);
@@ -30,6 +31,7 @@ describe("Require Role Middleware", () => {
 
     const response = await request(app)
       .get("/api/v1/test/admin")
+      .set("X-DigitAuth-Client-Id", auth.clientId)
       .set("Authorization", `Bearer ${auth.accessToken}`);
 
     expect(response.status).toBe(200);

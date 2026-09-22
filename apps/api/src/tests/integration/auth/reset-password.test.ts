@@ -1,7 +1,10 @@
 import request from "supertest";
+import { Types } from "mongoose";
 import { describe, expect, it } from "vitest";
 
 import app from "../../helpers/app.js";
+
+import { ApplicationService } from "../../../modules/application/service/application.service.js";
 
 import {
   buildLoginPayload,
@@ -11,116 +14,45 @@ import {
 import { User } from "../../../modules/auth/model/user.model.js";
 import { Session } from "../../../modules/auth/model/session.model.js";
 
+const applicationService = new ApplicationService();
+
+async function createTestApplication() {
+  const { application, credentials } =
+    await applicationService.createApplication(
+      "DigitAuth Reset Password Test Application",
+    );
+
+  return {
+    applicationId: new Types.ObjectId(application.id),
+    clientId: credentials.clientId,
+  };
+}
+
 describe("POST /api/v1/auth/reset-password", () => {
-  // it("should reset password successfully", async () => {
-  //   const payload = buildRegisterPayload();
-
-  //   await request(app).post("/api/v1/auth/register").send(payload);
-
-  //   await User.updateOne(
-  //     {
-  //       email: payload.email,
-  //     },
-  //     {
-  //       emailVerified: true,
-  //     },
-  //   );
-
-  //   // Login first so we create an active session
-  //   const loginResponse = await request(app)
-  //     .post("/api/v1/auth/login")
-  //     .send(
-  //       buildLoginPayload({
-  //         email: payload.email,
-  //         password: payload.password,
-  //       }),
-  //     );
-
-  //   expect(loginResponse.status).toBe(200);
-
-  //   // Ensure a session exists
-  //   const user = await User.findOne({
-  //     email: payload.email,
-  //   });
-
-  //   expect(user).not.toBeNull();
-
-  //   expect(
-  //     await Session.countDocuments({
-  //       userId: user!._id,
-  //     }),
-  //   ).toBe(1);
-
-  //   // Generate reset token
-  //   const forgotPasswordResponse = await request(app)
-  //     .post("/api/v1/auth/forgot-password")
-  //     .send({
-  //       email: payload.email,
-  //     });
-
-  //   const token = forgotPasswordResponse.body.data.resetToken;
-
-  //   // Reset password
-  //   const response = await request(app)
-  //     .post("/api/v1/auth/reset-password")
-  //     .send({
-  //       token,
-  //       password: "NewPassword123@",
-  //       confirmPassword: "NewPassword123@",
-  //     });
-
-  //   expect(response.status).toBe(200);
-
-  //   expect(response.body.success).toBe(true);
-
-  //   // Old password should fail
-  //   const oldLogin = await request(app)
-  //     .post("/api/v1/auth/login")
-  //     .send(
-  //       buildLoginPayload({
-  //         email: payload.email,
-  //         password: payload.password,
-  //       }),
-  //     );
-
-  //   expect(oldLogin.status).toBe(401);
-
-  //   // New password should work
-  //   const newLogin = await request(app)
-  //     .post("/api/v1/auth/login")
-  //     .send(
-  //       buildLoginPayload({
-  //         email: payload.email,
-  //         password: "NewPassword123@",
-  //       }),
-  //     );
-
-  //   expect(newLogin.status).toBe(200);
-
-  //   // Previous sessions should have been revoked.
-  //   // Only the new login should create one fresh session.
-  //   expect(
-  //     await Session.countDocuments({
-  //       userId: user!._id,
-  //     }),
-  //   ).toBe(1);
-  // });
-
   it("should reset password successfully", async () => {
-    console.log("1");
-
+    const { applicationId, clientId } = await createTestApplication();
     const payload = buildRegisterPayload();
 
-    await request(app).post("/api/v1/auth/register").send(payload);
+    const registerResponse = await request(app)
+      .post("/api/v1/auth/register")
+      .set("X-DigitAuth-Client-Id", clientId)
+      .send(payload);
 
-    console.log("2");
+    expect(registerResponse.status).toBe(201);
 
-    await User.updateOne({ email: payload.email }, { emailVerified: true });
-
-    console.log("3");
+    await User.updateOne(
+      {
+        applicationId,
+        email: payload.email,
+      },
+      {
+        emailVerified: true,
+      },
+    );
 
     const loginResponse = await request(app)
       .post("/api/v1/auth/login")
+      .set("X-DigitAuth-Client-Id", clientId)
       .send(
         buildLoginPayload({
           email: payload.email,
@@ -128,35 +60,86 @@ describe("POST /api/v1/auth/reset-password", () => {
         }),
       );
 
-    console.log("4");
-
     expect(loginResponse.status).toBe(200);
+
+    const user = await User.findOne({
+      applicationId,
+      email: payload.email,
+    });
+
+    expect(user).not.toBeNull();
+
+    expect(
+      await Session.countDocuments({
+        applicationId,
+        userId: user!._id,
+      }),
+    ).toBe(1);
 
     const forgotPasswordResponse = await request(app)
       .post("/api/v1/auth/forgot-password")
+      .set("X-DigitAuth-Client-Id", clientId)
       .send({
         email: payload.email,
       });
 
-    console.log("5");
+    expect(forgotPasswordResponse.status).toBe(200);
 
     const token = forgotPasswordResponse.body.data.resetToken;
 
+    expect(token).toBeDefined();
+
     const response = await request(app)
       .post("/api/v1/auth/reset-password")
+      .set("X-DigitAuth-Client-Id", clientId)
       .send({
         token,
         password: "NewPassword123@",
         confirmPassword: "NewPassword123@",
       });
 
-    console.log("6");
-
     expect(response.status).toBe(200);
+
+    expect(response.body.success).toBe(true);
+
+    const oldLogin = await request(app)
+      .post("/api/v1/auth/login")
+      .set("X-DigitAuth-Client-Id", clientId)
+      .send(
+        buildLoginPayload({
+          email: payload.email,
+          password: payload.password,
+        }),
+      );
+
+    expect(oldLogin.status).toBe(401);
+
+    const newLogin = await request(app)
+      .post("/api/v1/auth/login")
+      .set("X-DigitAuth-Client-Id", clientId)
+      .send(
+        buildLoginPayload({
+          email: payload.email,
+          password: "NewPassword123@",
+        }),
+      );
+
+    expect(newLogin.status).toBe(200);
+
+    expect(
+      await Session.countDocuments({
+        applicationId,
+        userId: user!._id,
+      }),
+    ).toBe(1);
   });
+
   it("should reject invalid token", async () => {
+    const { clientId } = await createTestApplication();
+
     const response = await request(app)
       .post("/api/v1/auth/reset-password")
+      .set("X-DigitAuth-Client-Id", clientId)
       .send({
         token: "invalid-token",
         password: "Password123@",
@@ -169,8 +152,11 @@ describe("POST /api/v1/auth/reset-password", () => {
   });
 
   it("should reject mismatched passwords", async () => {
+    const { clientId } = await createTestApplication();
+
     const response = await request(app)
       .post("/api/v1/auth/reset-password")
+      .set("X-DigitAuth-Client-Id", clientId)
       .send({
         token: "anything",
         password: "Password123@",
@@ -183,12 +169,19 @@ describe("POST /api/v1/auth/reset-password", () => {
   });
 
   it("should reject reused reset token", async () => {
+    const { applicationId, clientId } = await createTestApplication();
     const payload = buildRegisterPayload();
 
-    await request(app).post("/api/v1/auth/register").send(payload);
+    const registerResponse = await request(app)
+      .post("/api/v1/auth/register")
+      .set("X-DigitAuth-Client-Id", clientId)
+      .send(payload);
+
+    expect(registerResponse.status).toBe(201);
 
     await User.updateOne(
       {
+        applicationId,
         email: payload.email,
       },
       {
@@ -198,20 +191,31 @@ describe("POST /api/v1/auth/reset-password", () => {
 
     const forgotPasswordResponse = await request(app)
       .post("/api/v1/auth/forgot-password")
+      .set("X-DigitAuth-Client-Id", clientId)
       .send({
         email: payload.email,
       });
 
+    expect(forgotPasswordResponse.status).toBe(200);
+
     const token = forgotPasswordResponse.body.data.resetToken;
 
-    await request(app).post("/api/v1/auth/reset-password").send({
-      token,
-      password: "NewPassword123@",
-      confirmPassword: "NewPassword123@",
-    });
+    expect(token).toBeDefined();
+
+    const firstAttempt = await request(app)
+      .post("/api/v1/auth/reset-password")
+      .set("X-DigitAuth-Client-Id", clientId)
+      .send({
+        token,
+        password: "NewPassword123@",
+        confirmPassword: "NewPassword123@",
+      });
+
+    expect(firstAttempt.status).toBe(200);
 
     const secondAttempt = await request(app)
       .post("/api/v1/auth/reset-password")
+      .set("X-DigitAuth-Client-Id", clientId)
       .send({
         token,
         password: "AnotherPassword123@",

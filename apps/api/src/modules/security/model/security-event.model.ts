@@ -1,8 +1,16 @@
 import { Schema, model, Types } from "mongoose";
+
 import { SecurityEvent } from "../types/security-event.js";
 
 const securityEventSchema = new Schema(
   {
+    applicationId: {
+      type: Types.ObjectId,
+      ref: "Application",
+      required: true,
+      index: true,
+    },
+
     userId: {
       type: Types.ObjectId,
       ref: "User",
@@ -31,10 +39,13 @@ const securityEventSchema = new Schema(
 );
 
 securityEventSchema.index({
+  applicationId: 1,
   userId: 1,
   createdAt: -1,
 });
+
 securityEventSchema.index({
+  applicationId: 1,
   event: 1,
 });
 

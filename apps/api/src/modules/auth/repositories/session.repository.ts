@@ -1,12 +1,13 @@
 import { Types, type ClientSession } from "mongoose";
+
 import { Session, type SessionDocument } from "../model/session.model.js";
+
 import { withSession } from "../../../shared/utils/mongoose.js";
 
 export class SessionRepository {
-  // create a new session
-
   async create(
     data: {
+      applicationId: Types.ObjectId;
       userId: Types.ObjectId;
       refreshTokenHash: string;
       userAgent?: string | null;
@@ -22,58 +23,104 @@ export class SessionRepository {
     return sessionDoc;
   }
 
-  // find a session by id
   async findById(id: string): Promise<SessionDocument | null> {
     return Session.findById(id);
   }
 
-  // find all session for a user
-  async findByUserId(userId: Types.ObjectId): Promise<SessionDocument[]> {
-    return Session.find({ userId }).sort({
+  async findByUserId(
+    applicationId: Types.ObjectId,
+    userId: Types.ObjectId,
+  ): Promise<SessionDocument[]> {
+    return Session.find({
+      applicationId,
+      userId,
+    }).sort({
       createdAt: -1,
     });
   }
 
-  // delete one Session
   async deleteById(id: string, session?: ClientSession): Promise<void> {
     await Session.findByIdAndDelete(id, withSession(session));
   }
 
+  async deleteByIdInApplication(
+    applicationId: Types.ObjectId,
+    sessionId: string,
+    session?: ClientSession,
+  ): Promise<void> {
+    await Session.findOneAndDelete(
+      {
+        _id: sessionId,
+        applicationId,
+      },
+      withSession(session),
+    );
+  }
+
+  async deleteByIdForUser(
+    applicationId: Types.ObjectId,
+    sessionId: string,
+    userId: Types.ObjectId,
+  ): Promise<void> {
+    await Session.findOneAndDelete({
+      _id: sessionId,
+      applicationId,
+      userId,
+    });
+  }
+
   async deleteByUserId(
+    applicationId: Types.ObjectId,
     userId: Types.ObjectId,
     session?: ClientSession,
   ): Promise<void> {
-    await Session.deleteMany({ userId }, withSession(session));
+    await Session.deleteMany(
+      {
+        applicationId,
+        userId,
+      },
+      withSession(session),
+    );
   }
 
-  // delete all session for a user
-  async deleteAllForUser(userId: Types.ObjectId): Promise<void> {
-    await Session.deleteMany({ userId });
+  async deleteAllForUser(
+    applicationId: Types.ObjectId,
+    userId: Types.ObjectId,
+  ): Promise<void> {
+    await Session.deleteMany({
+      applicationId,
+      userId,
+    });
   }
 
   async deleteOthers(
+    applicationId: Types.ObjectId,
     userId: Types.ObjectId,
     currentSessionId: string,
   ): Promise<void> {
     await Session.deleteMany({
+      applicationId,
       userId,
-      _id: { $ne: currentSessionId },
+      _id: {
+        $ne: currentSessionId,
+      },
     });
   }
 
   async belongsToUser(
+    applicationId: Types.ObjectId,
     sessionId: string,
     userId: Types.ObjectId,
   ): Promise<boolean> {
     const session = await Session.exists({
       _id: sessionId,
+      applicationId,
       userId,
     });
 
     return !!session;
   }
 
-  // Update last used time
   async updateLastUsed(
     sessionId: string,
     session?: ClientSession,
@@ -87,7 +134,6 @@ export class SessionRepository {
     );
   }
 
-  // Delete expired sessions
   async deleteExpired(): Promise<void> {
     await Session.deleteMany({
       expiresAt: {
@@ -96,49 +142,58 @@ export class SessionRepository {
     });
   }
 
-  // Find session by user ID and refresh token hash
   async findByUserIdAndRefreshTokenHash(
+    applicationId: Types.ObjectId,
     userId: Types.ObjectId,
     refreshTokenHash: string,
   ): Promise<SessionDocument | null> {
     return Session.findOne({
+      applicationId,
       userId,
       refreshTokenHash,
     }).select("+refreshTokenHash");
   }
 
   async findByRefreshTokenHash(
+    applicationId: Types.ObjectId,
     refreshTokenHash: string,
   ): Promise<SessionDocument | null> {
     return Session.findOne({
+      applicationId,
       refreshTokenHash,
     }).select("+refreshTokenHash");
   }
 
   async findCurrentSession(
+    applicationId: Types.ObjectId,
     userId: Types.ObjectId,
     refreshTokenHash: string,
   ): Promise<SessionDocument | null> {
     return Session.findOne({
+      applicationId,
       userId,
       refreshTokenHash,
     }).select("+refreshTokenHash");
   }
 
   async findByIdForUser(
+    applicationId: Types.ObjectId,
     sessionId: string,
     userId: Types.ObjectId,
   ): Promise<SessionDocument | null> {
     return Session.findOne({
       _id: sessionId,
+      applicationId,
       userId,
     }).select("+refreshTokenHash");
   }
 
   async findByUserIdWithDetails(
+    applicationId: Types.ObjectId,
     userId: Types.ObjectId,
   ): Promise<SessionDocument[]> {
     return Session.find({
+      applicationId,
       userId,
     })
       .select("-refreshTokenHash")
