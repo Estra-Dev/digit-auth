@@ -31,11 +31,6 @@ import { ApiResponse } from "../core/response/ApiResponse.js";
 
 export function validate<T>(schema: ZodType<T>): RequestHandler {
   return (req, res, next) => {
-    console.log("==============");
-    console.log(req.originalUrl);
-    console.log("BODY RECEIVED:");
-    console.dir(req.body, { depth: null });
-
     const payload = {
       body: req.body,
       params: req.params,

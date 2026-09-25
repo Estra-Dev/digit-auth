@@ -27,6 +27,9 @@ const envSchema = z.object({
 
   CORS_ORIGINS: z.string().min(1),
   DASHBOARD_URL: z.url(),
+
+  PLATFORM_OWNER_EMAIL: z.email(),
+  PLATFORM_OWNER_PASSWORD: z.string().min(12),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
