@@ -10,9 +10,7 @@ export class ApplicationRepository {
   }
 
   async findByClientId(clientId: string): Promise<ApplicationDocument | null> {
-    return Application.findOne({
-      clientId,
-    });
+    return Application.findOne({ clientId });
   }
 
   async findActiveByClientId(
@@ -27,9 +25,11 @@ export class ApplicationRepository {
   async findByClientIdWithSecret(
     clientId: string,
   ): Promise<ApplicationDocument | null> {
-    return Application.findOne({
-      clientId,
-    }).select("+clientSecretHash");
+    return Application.findOne({ clientId }).select("+clientSecretHash");
+  }
+
+  async findAll(): Promise<ApplicationDocument[]> {
+    return Application.find().sort({ createdAt: -1 });
   }
 
   async create(data: {
@@ -50,14 +50,20 @@ export class ApplicationRepository {
   ): Promise<ApplicationDocument | null> {
     return Application.findByIdAndUpdate(
       applicationId,
-      {
-        status,
-      },
-      {
-        new: true,
-        runValidators: true,
-      },
+      { status },
+      { new: true, runValidators: true },
     );
+  }
+
+  async updateClientSecretHash(
+    applicationId: string,
+    clientSecretHash: string,
+  ): Promise<ApplicationDocument | null> {
+    return Application.findByIdAndUpdate(
+      applicationId,
+      { clientSecretHash },
+      { new: true, runValidators: true },
+    ).select("+clientSecretHash");
   }
 }
 
