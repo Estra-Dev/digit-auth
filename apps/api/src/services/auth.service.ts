@@ -199,6 +199,10 @@ export class AuthService {
       throw new AppError("Invalid Refresh Token", 401, true);
     }
 
+    if (payload.applicationId !== applicationId.toString()) {
+      throw new AppError("Invalid authentication context.", 401, true);
+    }
+
     const refreshTokenHash = tokenHashService.hash(data.refreshToken);
 
     const userId = new Types.ObjectId(payload.sub);
@@ -291,6 +295,10 @@ export class AuthService {
       throw new AppError("Invalid Refresh Token", 401, true);
     }
 
+    if (payload.applicationId !== applicationId.toString()) {
+      throw new AppError("Invalid authentication context.", 401, true);
+    }
+
     const refreshTokenHash = tokenHashService.hash(data.refreshToken);
 
     const session = await sessionRepository.findByUserIdAndRefreshTokenHash(
@@ -322,6 +330,10 @@ export class AuthService {
       payload = await jwtService.verifyRefreshToken(data.refreshToken);
     } catch {
       throw new AppError("Invalid Refresh Token", 401, true);
+    }
+
+    if (payload.applicationId !== applicationId.toString()) {
+      throw new AppError("Invalid authentication context.", 401, true);
     }
 
     const userId = new Types.ObjectId(payload.sub);
@@ -541,6 +553,10 @@ export class AuthService {
       payload = await jwtService.verifyRefreshToken(refreshToken);
     } catch {
       throw new AppError("Invalid Refresh Token", 401, true);
+    }
+
+    if (payload.applicationId !== applicationId.toString()) {
+      throw new AppError("Invalid authentication context.", 401, true);
     }
 
     if (payload.sub !== userId) {

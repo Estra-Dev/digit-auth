@@ -38,4 +38,17 @@ describe("Require Role Middleware", () => {
 
     expect(response.body.success).toBe(true);
   });
+
+  it("should reject an admin access token from another application", async () => {
+    const applicationA = await loginAsAdmin();
+    const applicationB = await loginAsVerifiedUser();
+
+    const response = await request(app)
+      .get("/api/v1/test/admin")
+      .set("X-DigitAuth-Client-Id", applicationB.clientId)
+      .set("Authorization", `Bearer ${applicationA.accessToken}`);
+
+    expect(response.status).toBe(401);
+    expect(response.body.success).toBe(false);
+  });
 });

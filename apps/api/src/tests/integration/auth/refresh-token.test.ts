@@ -137,6 +137,21 @@ describe("POST /api/v1/auth/refresh", () => {
     expect(response.body.success).toBe(false);
   });
 
+  it("should reject a refresh token from another application", async () => {
+    const applicationA = await loginAsVerifiedUser();
+    const applicationB = await loginAsVerifiedUser();
+
+    const response = await request(app)
+      .post("/api/v1/auth/refresh")
+      .set("X-DigitAuth-Client-Id", applicationB.clientId)
+      .send({
+        refreshToken: applicationA.refreshToken,
+      });
+
+    expect(response.status).toBe(401);
+    expect(response.body.success).toBe(false);
+  });
+
   it("should keep only one session after multiple rotations", async () => {
     const auth = await loginAsVerifiedUser();
 

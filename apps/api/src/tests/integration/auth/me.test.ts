@@ -64,6 +64,31 @@ describe("GET /api/v1/auth/me", () => {
     expect(response.body.success).toBe(false);
   });
 
+  it("should reject an access token from another application", async () => {
+    const applicationA = await createVerifiedUser();
+    const applicationB = await createVerifiedUser();
+
+    const loginResponse = await request(app)
+      .post("/api/v1/auth/login")
+      .set("X-DigitAuth-Client-Id", applicationA.clientId)
+      .send({
+        email: applicationA.email,
+        password: applicationA.password,
+      });
+
+    expect(loginResponse.status).toBe(200);
+
+    const accessToken = loginResponse.body.data.accessToken;
+
+    const response = await request(app)
+      .get("/api/v1/auth/me")
+      .set("X-DigitAuth-Client-Id", applicationB.clientId)
+      .set("Authorization", `Bearer ${accessToken}`);
+
+    expect(response.status).toBe(401);
+    expect(response.body.success).toBe(false);
+  });
+
   it("should reject deleted users", async () => {
     const auth = await createVerifiedUser();
 
