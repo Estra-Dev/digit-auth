@@ -15,7 +15,7 @@ export const createPlatformApplicationSchema = z.object({
 });
 
 export const platformApplicationIdSchema = z.object({
-  body: z.object({}),
+  body: z.object({}).default({}),
   params: applicationIdParamsSchema,
   query: z.object({}),
 });
