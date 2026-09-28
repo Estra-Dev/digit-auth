@@ -6,7 +6,6 @@ import {
   getPlatformAccount,
   hasPlatformSession,
 } from "@/lib/platform-auth/platform-auth";
-import PlatformSidebar from "@/components/platform/sidebar";
 
 export default function PlatformProtectedLayout({
   children,
@@ -17,8 +16,6 @@ export default function PlatformProtectedLayout({
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
-
     async function checkAuthentication() {
       if (!hasPlatformSession()) {
         router.replace("/platform/login");
@@ -27,22 +24,13 @@ export default function PlatformProtectedLayout({
 
       try {
         await getPlatformAccount();
-
-        if (!cancelled) {
-          setChecking(false);
-        }
+        setChecking(false);
       } catch {
-        if (!cancelled) {
-          router.replace("/platform/login");
-        }
+        router.replace("/platform/login");
       }
     }
 
     void checkAuthentication();
-
-    return () => {
-      cancelled = true;
-    };
   }, [router]);
 
   if (checking) {
@@ -53,11 +41,5 @@ export default function PlatformProtectedLayout({
     );
   }
 
-  return (
-    <div className="flex min-h-screen bg-slate-950">
-      <PlatformSidebar />
-
-      <div className="min-w-0 flex-1">{children}</div>
-    </div>
-  );
+  return children;
 }
