@@ -32,13 +32,14 @@ function mapApplication(application: {
 }
 
 export class ApplicationService {
-  async createApplication(name: string) {
+  async createApplication(workspaceId: string, name: string) {
     const clientId = generateClientId();
     const clientSecret = generateClientSecret();
 
     const clientSecretHash = await passwordService.hash(clientSecret);
 
     const application = await applicationRepository.create({
+      workspaceId,
       name,
       clientId,
       clientSecretHash,
@@ -53,14 +54,18 @@ export class ApplicationService {
     };
   }
 
-  async listApplications() {
-    const applications = await applicationRepository.findAll();
+  async listApplications(workspaceId: string) {
+    const applications =
+      await applicationRepository.findByWorkspaceId(workspaceId);
 
     return applications.map(mapApplication);
   }
 
-  async getApplication(applicationId: string) {
-    const application = await applicationRepository.findById(applicationId);
+  async getApplication(workspaceId: string, applicationId: string) {
+    const application = await applicationRepository.findByIdInWorkspace(
+      applicationId,
+      workspaceId,
+    );
 
     if (!application) {
       throw new AppError("Application not found.", 404, true);
@@ -69,34 +74,57 @@ export class ApplicationService {
     return mapApplication(application);
   }
 
-  async suspendApplication(applicationId: string) {
-    const application = await applicationRepository.updateStatus(
+  async suspendApplication(workspaceId: string, applicationId: string) {
+    const application = await applicationRepository.findByIdInWorkspace(
+      applicationId,
+      workspaceId,
+    );
+
+    if (!application) {
+      throw new AppError("Application not found.", 404, true);
+    }
+
+    const updated = await applicationRepository.updateStatus(
+      workspaceId,
       applicationId,
       ApplicationStatus.SUSPENDED,
     );
 
-    if (!application) {
+    if (!updated) {
       throw new AppError("Application not found.", 404, true);
     }
 
-    return mapApplication(application);
+    return mapApplication(updated);
   }
 
-  async activateApplication(applicationId: string) {
-    const application = await applicationRepository.updateStatus(
+  async activateApplication(workspaceId: string, applicationId: string) {
+    const application = await applicationRepository.findByIdInWorkspace(
       applicationId,
-      ApplicationStatus.ACTIVE,
+      workspaceId,
     );
 
     if (!application) {
       throw new AppError("Application not found.", 404, true);
     }
 
-    return mapApplication(application);
+    const updated = await applicationRepository.updateStatus(
+      workspaceId,
+      applicationId,
+      ApplicationStatus.ACTIVE,
+    );
+
+    if (!updated) {
+      throw new AppError("Application not found.", 404, true);
+    }
+
+    return mapApplication(updated);
   }
 
-  async rotateClientSecret(applicationId: string) {
-    const application = await applicationRepository.findById(applicationId);
+  async rotateClientSecret(workspaceId: string, applicationId: string) {
+    const application = await applicationRepository.findByIdInWorkspace(
+      applicationId,
+      workspaceId,
+    );
 
     if (!application) {
       throw new AppError("Application not found.", 404, true);
@@ -106,15 +134,20 @@ export class ApplicationService {
 
     const clientSecretHash = await passwordService.hash(clientSecret);
 
-    await applicationRepository.updateClientSecretHash(
+    const updated = await applicationRepository.updateClientSecretHash(
+      workspaceId,
       applicationId,
       clientSecretHash,
     );
 
+    if (!updated) {
+      throw new AppError("Application not found.", 404, true);
+    }
+
     return {
-      application: mapApplication(application),
+      application: mapApplication(updated),
       credentials: {
-        clientId: application.clientId,
+        clientId: updated.clientId,
         clientSecret,
       },
     };

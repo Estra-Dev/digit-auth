@@ -36,6 +36,12 @@ const applicationSchema = new Schema(
       required: true,
       index: true,
     },
+    workspaceId: {
+      type: Schema.Types.ObjectId,
+      ref: "Workspace",
+      required: true,
+      index: true,
+    },
   },
   {
     timestamps: true,

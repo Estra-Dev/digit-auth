@@ -32,12 +32,30 @@ export class ApplicationRepository {
     return Application.find().sort({ createdAt: -1 });
   }
 
+  async findByWorkspaceId(workspaceId: string): Promise<ApplicationDocument[]> {
+    return Application.find({
+      workspaceId,
+    }).sort({ createdAt: -1 });
+  }
+
+  async findByIdInWorkspace(
+    applicationId: string,
+    workspaceId: string,
+  ): Promise<ApplicationDocument | null> {
+    return Application.findOne({
+      _id: applicationId,
+      workspaceId,
+    });
+  }
+
   async create(data: {
+    workspaceId: string;
     name: string;
     clientId: string;
     clientSecretHash: string;
   }): Promise<ApplicationDocument> {
     return Application.create({
+      workspaceId: data.workspaceId,
       name: data.name,
       clientId: data.clientId,
       clientSecretHash: data.clientSecretHash,
@@ -45,22 +63,30 @@ export class ApplicationRepository {
   }
 
   async updateStatus(
+    workspaceId: string,
     applicationId: string,
     status: ApplicationStatus,
   ): Promise<ApplicationDocument | null> {
-    return Application.findByIdAndUpdate(
-      applicationId,
+    return Application.findOneAndUpdate(
+      {
+        _id: applicationId,
+        workspaceId,
+      },
       { status },
       { new: true, runValidators: true },
     );
   }
 
   async updateClientSecretHash(
+    workspaceId: string,
     applicationId: string,
     clientSecretHash: string,
   ): Promise<ApplicationDocument | null> {
-    return Application.findByIdAndUpdate(
-      applicationId,
+    return Application.findOneAndUpdate(
+      {
+        _id: applicationId,
+        workspaceId,
+      },
       { clientSecretHash },
       { new: true, runValidators: true },
     ).select("+clientSecretHash");
