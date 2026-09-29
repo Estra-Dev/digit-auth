@@ -9,13 +9,17 @@ import { ApplicationService } from "../../../modules/application/service/applica
 import { buildRegisterPayload } from "../../helpers/factories.js";
 
 import { User } from "../../../modules/auth/model/user.model.js";
+import { getTestWorkspace } from "../../helpers/workspace.helper.js";
 
 const applicationService = new ApplicationService();
 
 async function createTestApplication() {
+  const workspace = await getTestWorkspace();
+
   const { application, credentials } =
     await applicationService.createApplication(
-      "DigitAuth Verify Email Test Application",
+      workspace.id,
+      "DigitAuth Test Application",
     );
 
   return {

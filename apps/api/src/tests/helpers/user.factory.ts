@@ -10,6 +10,7 @@ import { userRepository } from "../../modules/auth/repositories/user.repository.
 import { authService } from "../../services/auth.service.js";
 
 import { buildRegisterPayload } from "./factories.js";
+import { getTestWorkspace } from "./workspace.helper.js";
 
 type CreateUserOptions = {
   role?: UserRole;
@@ -51,8 +52,13 @@ async function createUserInApplication(
 }
 
 export async function createUser(options: CreateUserOptions = {}) {
+  const workspace = await getTestWorkspace();
+
   const { application, credentials } =
-    await applicationService.createApplication("DigitAuth Test Application");
+    await applicationService.createApplication(
+      workspace.id,
+      "DigitAuth Test Application",
+    );
 
   const applicationId = new Types.ObjectId(application.id);
 

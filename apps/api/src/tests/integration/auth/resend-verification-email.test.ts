@@ -10,13 +10,17 @@ import { buildRegisterPayload } from "../../helpers/factories.js";
 
 import { User } from "../../../modules/auth/model/user.model.js";
 import { VerificationToken } from "../../../modules/auth/model/verification-token.model.js";
+import { getTestWorkspace } from "../../helpers/workspace.helper.js";
 
 const applicationService = new ApplicationService();
 
 async function createTestApplication() {
+  const workspace = await getTestWorkspace();
+
   const { application, credentials } =
     await applicationService.createApplication(
-      "DigitAuth Resend Verification Test Application",
+      workspace.id,
+      "DigitAuth Test Application",
     );
 
   return {

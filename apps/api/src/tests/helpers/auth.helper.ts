@@ -7,6 +7,7 @@ import { ApplicationService } from "../../modules/application/service/applicatio
 import { User } from "../../modules/auth/model/user.model.js";
 
 import { buildRegisterPayload } from "./factories.js";
+import { getTestWorkspace } from "./workspace.helper.js";
 
 const applicationService = new ApplicationService();
 
@@ -15,8 +16,13 @@ export async function createVerifiedUser(
 ) {
   const payload = buildRegisterPayload(overrides);
 
+  const workspace = await getTestWorkspace();
+
   const { application, credentials } =
-    await applicationService.createApplication("DigitAuth Test Application");
+    await applicationService.createApplication(
+      workspace.id,
+      "DigitAuth Test Application",
+    );
 
   const applicationId = new Types.ObjectId(application.id);
 

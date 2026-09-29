@@ -3,17 +3,30 @@ import type { Request, Response } from "express";
 import { ApiResponse } from "../core/response/ApiResponse.js";
 import { applicationService } from "../modules/application/service/application.service.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { AppError } from "../core/errors/AppError.js";
 
 import type {
   CreatePlatformApplicationInput,
   PlatformApplicationIdInput,
 } from "../validators/platform-application.validator.js";
+import { workspaceService } from "../modules/workspace/index.js";
 
 export const createPlatformApplication = asyncHandler(
   async (req: Request, res: Response) => {
     const body = req.body as CreatePlatformApplicationInput;
 
-    const result = await applicationService.createApplication(body.name);
+    if (!req.platformAccount) {
+      throw new AppError("Platform authentication is required.", 401, true);
+    }
+
+    const workspace = await workspaceService.getWorkspaceByOwnerId(
+      req.platformAccount.id,
+    );
+
+    const result = await applicationService.createApplication(
+      workspace.id,
+      body.name,
+    );
 
     return ApiResponse.success(res, {
       statusCode: 201,
@@ -24,8 +37,14 @@ export const createPlatformApplication = asyncHandler(
 );
 
 export const listPlatformApplications = asyncHandler(
-  async (_req: Request, res: Response) => {
-    const applications = await applicationService.listApplications();
+  async (req: Request, res: Response) => {
+    const workspace = await workspaceService.getWorkspaceByOwnerId(
+      req.platformAccount!.id,
+    );
+
+    const applications = await applicationService.listApplications(
+      workspace.id,
+    );
 
     return ApiResponse.success(res, {
       statusCode: 200,
@@ -37,7 +56,14 @@ export const listPlatformApplications = asyncHandler(
 
 export const getPlatformApplication = asyncHandler(
   async (req: Request<PlatformApplicationIdInput>, res: Response) => {
-    const application = await applicationService.getApplication(req.params.id);
+    const workspace = await workspaceService.getWorkspaceByOwnerId(
+      req.platformAccount!.id,
+    );
+
+    const application = await applicationService.getApplication(
+      workspace.id,
+      req.params.id,
+    );
 
     return ApiResponse.success(res, {
       statusCode: 200,
@@ -49,7 +75,12 @@ export const getPlatformApplication = asyncHandler(
 
 export const suspendPlatformApplication = asyncHandler(
   async (req: Request<PlatformApplicationIdInput>, res: Response) => {
+    const workspace = await workspaceService.getWorkspaceByOwnerId(
+      req.platformAccount!.id,
+    );
+
     const application = await applicationService.suspendApplication(
+      workspace.id,
       req.params.id,
     );
 
@@ -63,7 +94,12 @@ export const suspendPlatformApplication = asyncHandler(
 
 export const activatePlatformApplication = asyncHandler(
   async (req: Request<PlatformApplicationIdInput>, res: Response) => {
+    const workspace = await workspaceService.getWorkspaceByOwnerId(
+      req.platformAccount!.id,
+    );
+
     const application = await applicationService.activateApplication(
+      workspace.id,
       req.params.id,
     );
 
@@ -77,7 +113,14 @@ export const activatePlatformApplication = asyncHandler(
 
 export const rotatePlatformApplicationSecret = asyncHandler(
   async (req: Request<PlatformApplicationIdInput>, res: Response) => {
-    const result = await applicationService.rotateClientSecret(req.params.id);
+    const workspace = await workspaceService.getWorkspaceByOwnerId(
+      req.platformAccount!.id,
+    );
+
+    const result = await applicationService.rotateClientSecret(
+      workspace.id,
+      req.params.id,
+    );
 
     return ApiResponse.success(res, {
       statusCode: 200,
