@@ -201,6 +201,22 @@ export class SessionRepository {
         createdAt: -1,
       });
   }
+
+  async findAllWithDetails(): Promise<SessionDocument[]> {
+    return Session.find()
+      .select("-refreshTokenHash")
+      .populate({
+        path: "userId",
+        select: "firstName lastName email role status emailVerified",
+      })
+      .populate({
+        path: "applicationId",
+        select: "name clientId status",
+      })
+      .sort({
+        createdAt: -1,
+      });
+  }
 }
 
 export const sessionRepository = new SessionRepository();

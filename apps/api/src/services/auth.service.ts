@@ -78,7 +78,14 @@ export class AuthService {
     return response;
   }
 
-  async login(applicationId: Types.ObjectId, data: LoginInput) {
+  async login(
+    applicationId: Types.ObjectId,
+    data: LoginInput,
+    sessionMetadata?: {
+      userAgent?: string | null;
+      ipAddress?: string | null;
+    },
+  ) {
     const user = await userRepository.findEmailWithPassword(
       applicationId,
       data.email,
@@ -168,6 +175,8 @@ export class AuthService {
       applicationId,
       userId: user._id,
       refreshTokenHash,
+      userAgent: sessionMetadata?.userAgent ?? null,
+      ipAddress: sessionMetadata?.ipAddress ?? null,
       expiresAt: addDays(config.SESSION_EXPIRES_IN_DAYS),
     });
 
@@ -190,7 +199,14 @@ export class AuthService {
     };
   }
 
-  async refreshToken(applicationId: Types.ObjectId, data: RefreshTokenInput) {
+  async refreshToken(
+    applicationId: Types.ObjectId,
+    data: RefreshTokenInput,
+    sessionMetadata?: {
+      userAgent?: string | null;
+      ipAddress?: string | null;
+    },
+  ) {
     let payload: JwtPayload;
 
     try {
@@ -249,6 +265,8 @@ export class AuthService {
           applicationId,
           userId,
           refreshTokenHash: newRefreshTokenHash,
+          userAgent: sessionMetadata?.userAgent ?? null,
+          ipAddress: sessionMetadata?.ipAddress ?? null,
           expiresAt: addDays(config.SESSION_EXPIRES_IN_DAYS),
         },
         dbSession,

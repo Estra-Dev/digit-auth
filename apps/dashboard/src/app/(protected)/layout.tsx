@@ -7,6 +7,7 @@ import {
   hasPlatformSession,
 } from "@/lib/platform-auth/platform-auth";
 import PlatformSidebar from "@/components/platform/sidebar";
+import PlatformHeader from "@/components/platform/header";
 
 export default function PlatformProtectedLayout({
   children,
@@ -14,7 +15,9 @@ export default function PlatformProtectedLayout({
   children: React.ReactNode;
 }>) {
   const router = useRouter();
+
   const [checking, setChecking] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,6 +48,20 @@ export default function PlatformProtectedLayout({
     };
   }, [router]);
 
+  useEffect(() => {
+    function handleResize() {
+      if (window.innerWidth >= 1024) {
+        setMobileSidebarOpen(false);
+      }
+    }
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
   if (checking) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-950">
@@ -54,10 +71,19 @@ export default function PlatformProtectedLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-950">
-      <PlatformSidebar />
+    <div className="min-h-screen bg-slate-950">
+      <div className="flex min-h-screen">
+        <PlatformSidebar
+          mobileOpen={mobileSidebarOpen}
+          onClose={() => setMobileSidebarOpen(false)}
+        />
 
-      <div className="min-w-0 flex-1">{children}</div>
+        <div className="min-w-0 flex-1">
+          <PlatformHeader onMenuClick={() => setMobileSidebarOpen(true)} />
+
+          <div className="min-w-0">{children}</div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -36,7 +36,16 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const applicationId = getApplicationId(req);
 
-  const result = await authService.login(applicationId, req.body);
+  console.log({
+    userAgent: req.get("user-agent"),
+    ip: req.ip,
+    forwardedFor: req.headers["x-forwarded-for"],
+  });
+
+  const result = await authService.login(applicationId, req.body, {
+    userAgent: req.get("user-agent") ?? null,
+    ipAddress: req.ip ?? null,
+  });
 
   return ApiResponse.success(res, {
     statusCode: 200,
@@ -49,7 +58,10 @@ export const refreshToken = asyncHandler(
   async (req: Request, res: Response) => {
     const applicationId = getApplicationId(req);
 
-    const result = await authService.refreshToken(applicationId, req.body);
+    const result = await authService.refreshToken(applicationId, req.body, {
+      userAgent: req.get("user-agent") ?? null,
+      ipAddress: req.ip ?? null,
+    });
 
     return ApiResponse.success(res, {
       statusCode: 200,

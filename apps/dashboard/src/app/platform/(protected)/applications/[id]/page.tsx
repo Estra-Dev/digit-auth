@@ -29,6 +29,7 @@ export default function PlatformApplicationDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -92,7 +93,7 @@ export default function PlatformApplicationDetailsPage() {
     if (!application) return;
 
     const confirmed = window.confirm(
-      "Rotate this application's client secret? The current secret will stop being valid.",
+      "Rotate this application's client secret?\n\nThe current secret will immediately stop being valid. You will need to update any service using the old secret.",
     );
 
     if (!confirmed) return;
@@ -101,6 +102,7 @@ export default function PlatformApplicationDetailsPage() {
       setActionLoading(true);
       setError("");
       setCredentials(null);
+      setCopied("");
 
       const result = await rotatePlatformApplicationSecret(application.id);
 
@@ -117,40 +119,56 @@ export default function PlatformApplicationDetailsPage() {
     }
   }
 
-  async function copyValue(value: string) {
-    await navigator.clipboard.writeText(value);
+  async function copyValue(value: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+
+      setCopied(label);
+
+      window.setTimeout(() => {
+        setCopied((current) => (current === label ? "" : current));
+      }, 2000);
+    } catch {
+      setError("Failed to copy value.");
+    }
   }
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-950 p-8 text-white">
-        <p className="text-sm text-slate-400">Loading application...</p>
+      <main className="min-h-[calc(100vh-4rem)] bg-slate-950 px-6 py-10 text-white">
+        <div className="mx-auto max-w-5xl">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8">
+            <p className="text-sm text-slate-400">Loading application...</p>
+          </div>
+        </div>
       </main>
     );
   }
 
   if (!application) {
     return (
-      <main className="min-h-screen bg-slate-950 p-8 text-white">
-        <button
-          type="button"
-          onClick={() => router.push("/platform/applications")}
-          className="text-sm text-slate-400 hover:text-white"
-        >
-          ← Back to applications
-        </button>
+      <main className="min-h-[calc(100vh-4rem)] bg-slate-950 px-6 py-10 text-white">
+        <div className="mx-auto max-w-5xl">
+          <button
+            type="button"
+            onClick={() => router.push("/platform/applications")}
+            className="text-sm text-slate-400 transition hover:text-white"
+          >
+            ← Back to applications
+          </button>
 
-        <div className="mt-8 rounded-2xl border border-red-900/50 bg-red-950/30 p-6">
-          <p className="text-sm text-red-400">
-            {error || "Application not found."}
-          </p>
+          <div className="mt-8 rounded-2xl border border-red-900/50 bg-red-950/30 p-6">
+            <p className="text-sm text-red-400">
+              {error || "Application not found."}
+            </p>
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="min-h-[calc(100vh-4rem)] bg-slate-950 text-white">
       <div className="mx-auto max-w-5xl px-6 py-10">
         <button
           type="button"
@@ -161,9 +179,11 @@ export default function PlatformApplicationDetailsPage() {
         </button>
 
         <div className="mt-8 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-          <div>
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-3xl font-bold">{application.name}</h1>
+              <h1 className="break-words text-3xl font-bold tracking-tight">
+                {application.name}
+              </h1>
 
               <span
                 className={
@@ -176,8 +196,8 @@ export default function PlatformApplicationDetailsPage() {
               </span>
             </div>
 
-            <p className="mt-2 text-sm text-slate-500">
-              Application ID: {application.id}
+            <p className="mt-2 break-all font-mono text-xs text-slate-600">
+              ID: {application.id}
             </p>
           </div>
 
@@ -185,7 +205,7 @@ export default function PlatformApplicationDetailsPage() {
             type="button"
             disabled={actionLoading}
             onClick={() => void handleToggle()}
-            className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="shrink-0 rounded-lg border border-slate-700 px-4 py-2.5 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             {actionLoading
               ? "Updating..."
@@ -196,13 +216,27 @@ export default function PlatformApplicationDetailsPage() {
         </div>
 
         {error && (
-          <div className="mt-6 rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">
-            {error}
+          <div className="mt-6 flex items-start justify-between gap-4 rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3">
+            <p className="text-sm text-red-400">{error}</p>
+
+            <button
+              type="button"
+              onClick={() => setError("")}
+              className="shrink-0 text-xs text-red-500 transition hover:text-red-300"
+            >
+              Dismiss
+            </button>
           </div>
         )}
 
         <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <h2 className="text-lg font-semibold">Application information</h2>
+          <div>
+            <h2 className="text-lg font-semibold">Application information</h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Basic information and identifiers for this application.
+            </p>
+          </div>
 
           <div className="mt-6 grid gap-6 sm:grid-cols-2">
             <InfoItem label="Name" value={application.name} />
@@ -213,7 +247,16 @@ export default function PlatformApplicationDetailsPage() {
               label="Client ID"
               value={application.clientId}
               copyable
-              onCopy={() => copyValue(application.clientId)}
+              copied={copied === "Client ID"}
+              onCopy={() => copyValue(application.clientId, "Client ID")}
+            />
+
+            <InfoItem
+              label="Application ID"
+              value={application.id}
+              copyable
+              copied={copied === "Application ID"}
+              onCopy={() => copyValue(application.id, "Application ID")}
             />
 
             <InfoItem
@@ -229,13 +272,13 @@ export default function PlatformApplicationDetailsPage() {
         </section>
 
         <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold">Client secret</h2>
 
-              <p className="mt-1 text-sm text-slate-400">
-                Rotate the secret if the current credential has been compromised
-                or needs to be replaced.
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-400">
+                The client secret is used by your application when communicating
+                securely with DigitAuth.
               </p>
             </div>
 
@@ -243,27 +286,60 @@ export default function PlatformApplicationDetailsPage() {
               type="button"
               disabled={actionLoading}
               onClick={() => void handleRotateSecret()}
-              className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+              className="shrink-0 rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Rotate secret
+              {actionLoading ? "Rotating..." : "Rotate secret"}
             </button>
           </div>
 
-          {credentials && (
-            <div className="mt-6 rounded-xl border border-amber-900/50 bg-amber-950/20 p-5">
-              <p className="text-sm font-medium text-amber-400">
-                New client secret generated
-              </p>
+          <div className="mt-6 rounded-xl border border-amber-900/50 bg-amber-950/20 p-5">
+            <p className="text-sm font-medium text-amber-400">
+              Keep your secret secure
+            </p>
 
-              <p className="mt-1 text-sm text-slate-400">
-                Save this secret now. It will not be shown again.
+            <p className="mt-1 text-xs leading-5 text-amber-500/80">
+              DigitAuth never displays the existing client secret. Rotating it
+              immediately invalidates the previous secret and generates a new
+              one.
+            </p>
+          </div>
+
+          {credentials && (
+            <div className="mt-5 rounded-xl border border-emerald-900/50 bg-emerald-950/20 p-5">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/10 text-sm text-emerald-400">
+                  ✓
+                </span>
+
+                <p className="text-sm font-medium text-emerald-400">
+                  New client secret generated
+                </p>
+              </div>
+
+              <p className="mt-2 text-sm leading-5 text-slate-400">
+                Copy this secret now. It will not be shown again after you leave
+                this page or hide it.
               </p>
 
               <CredentialRow
                 label="Client secret"
                 value={credentials.clientSecret}
-                onCopy={() => copyValue(credentials.clientSecret)}
+                copied={copied === "Client Secret"}
+                onCopy={() =>
+                  copyValue(credentials.clientSecret, "Client Secret")
+                }
               />
+
+              <button
+                type="button"
+                onClick={() => {
+                  setCredentials(null);
+                  setCopied("");
+                }}
+                className="mt-4 text-xs text-slate-500 transition hover:text-white"
+              >
+                Hide secret
+              </button>
             </div>
           )}
         </section>
@@ -276,11 +352,13 @@ function InfoItem({
   label,
   value,
   copyable = false,
+  copied = false,
   onCopy,
 }: {
   label: string;
   value: string;
   copyable?: boolean;
+  copied?: boolean;
   onCopy?: () => Promise<void>;
 }) {
   return (
@@ -289,16 +367,16 @@ function InfoItem({
         {label}
       </p>
 
-      <div className="mt-2 flex items-center gap-3">
+      <div className="mt-2 flex items-start gap-3">
         <p className="min-w-0 break-all text-sm text-slate-200">{value}</p>
 
         {copyable && onCopy && (
           <button
             type="button"
             onClick={() => void onCopy()}
-            className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800 hover:text-white"
+            className="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-slate-800 hover:text-white"
           >
-            Copy
+            {copied ? "Copied" : "Copy"}
           </button>
         )}
       </div>
@@ -309,29 +387,31 @@ function InfoItem({
 function CredentialRow({
   label,
   value,
+  copied,
   onCopy,
 }: {
   label: string;
   value: string;
+  copied: boolean;
   onCopy: () => Promise<void>;
 }) {
   return (
-    <div className="mt-4">
+    <div className="mt-5">
       <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
         {label}
       </p>
 
-      <div className="flex gap-3">
-        <code className="min-w-0 flex-1 overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-300">
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <code className="min-w-0 flex-1 overflow-x-auto break-all rounded-lg border border-slate-800 bg-slate-950 px-4 py-3 font-mono text-xs leading-5 text-slate-300">
           {value}
         </code>
 
         <button
           type="button"
           onClick={() => void onCopy()}
-          className="rounded-lg border border-slate-700 px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 hover:text-white"
+          className="shrink-0 rounded-lg border border-slate-700 px-4 py-3 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white"
         >
-          Copy
+          {copied ? "Copied" : "Copy"}
         </button>
       </div>
     </div>

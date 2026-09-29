@@ -5,6 +5,8 @@ import type {
   PlatformLoginResponse,
   PlatformRefreshResponse,
   PlatformSession,
+  PlatformUser,
+  PlatformApplicationSession,
 } from "@/types/platform-auth";
 
 const API_BASE_URL =
@@ -129,6 +131,18 @@ export async function getPlatformSessions(): Promise<PlatformSession[]> {
   return response.data;
 }
 
+export async function getPlatformApplicationSessions(): Promise<
+  PlatformApplicationSession[]
+> {
+  const response = await request<{
+    success: boolean;
+    message: string;
+    data: PlatformApplicationSession[];
+  }>("/platform/sessions");
+
+  return response.data;
+}
+
 export async function getPlatformApplications(): Promise<
   PlatformApplication[]
 > {
@@ -137,6 +151,26 @@ export async function getPlatformApplications(): Promise<
     message: string;
     data: PlatformApplication[];
   }>("/platform/applications");
+
+  return response.data;
+}
+
+export async function getPlatformUsers(): Promise<PlatformUser[]> {
+  const response = await request<{
+    success: boolean;
+    message: string;
+    data: PlatformUser[];
+  }>("/platform/users");
+
+  return response.data;
+}
+
+export async function getPlatformUser(userId: string): Promise<PlatformUser> {
+  const response = await request<{
+    success: boolean;
+    message: string;
+    data: PlatformUser;
+  }>(`/platform/users/${userId}`);
 
   return response.data;
 }
