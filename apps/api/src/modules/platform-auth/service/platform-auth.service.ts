@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 
 import { AppError } from "../../../core/errors/AppError.js";
 
@@ -8,6 +8,14 @@ import { tokenHashService } from "../../../security/token/token-hash.service.js"
 
 import { platformAccountRepository } from "../../platform-account/repository/platform-account.repository.js";
 import { platformSessionRepository } from "../../platform-session/repository/platform-session.repository.js";
+import { workspaceService } from "../../workspace/service/workspace.service.js";
+import { emailVerificationService } from "../../email-verification/index.js";
+// import { passwordResetTokenService } from "../../../security/password-reset-token/password-reset-token.service.js";
+import { tokenService } from "../../../security/index.js";
+import { platformPasswordResetRepository } from "../../platform-password-reset/index.js";
+
+import { emailService } from "../../email/index.js";
+import { config } from "../../../config/index.js";
 
 export type PlatformLoginContext = {
   userAgent?: string | null;
@@ -23,6 +31,65 @@ function getRefreshSessionExpiry(): Date {
 }
 
 export class PlatformAuthService {
+  async register(email: string, password: string) {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const existingAccount =
+      await platformAccountRepository.findByEmail(normalizedEmail);
+
+    if (existingAccount) {
+      throw new AppError(
+        "An account with this email already exists.",
+        409,
+        true,
+      );
+    }
+
+    const passwordHashed = await passwordService.hash(password);
+
+    const account = await platformAccountRepository.create({
+      email: normalizedEmail,
+      passwordHashed,
+      emailVerified: false,
+    });
+
+    try {
+      const workspace = await workspaceService.createWorkspace(
+        account.id,
+        "My Workspace",
+      );
+
+      const verification =
+        await emailVerificationService.createVerificationToken(account.id);
+
+      await emailService.sendVerificationEmail({
+        email: account.email,
+        verificationToken: verification.token,
+      });
+
+      return {
+        account: {
+          id: account.id,
+          email: account.email,
+          emailVerified: account.emailVerified,
+          status: account.status,
+          createdAt: account.createdAt,
+        },
+        workspace: {
+          id: workspace.id,
+          name: workspace.name,
+          status: workspace.status,
+          createdAt: workspace.createdAt,
+          updatedAt: workspace.updatedAt,
+        },
+      };
+    } catch (error) {
+      await platformAccountRepository.deleteById(account.id);
+
+      throw error;
+    }
+  }
+
   async login(
     email: string,
     password: string,
@@ -77,6 +144,14 @@ export class PlatformAuthService {
 
     await platformAccountRepository.resetFailedLoginAttempts(account.id);
 
+    if (!account.emailVerified) {
+      throw new AppError(
+        "Please verify your email before logging in.",
+        403,
+        true,
+      );
+    }
+
     const sessionId = new Types.ObjectId().toString();
 
     const payload = {
@@ -114,6 +189,130 @@ export class PlatformAuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  private async sendPasswordResetEmail(account: {
+    id: string;
+    email: string;
+  }): Promise<string> {
+    const resetToken = tokenService.generatePasswordResetToken();
+
+    const resetTokenHash = tokenHashService.hash(resetToken);
+
+    await platformPasswordResetRepository.deleteByAccountId(account.id);
+
+    await platformPasswordResetRepository.create({
+      platformAccountId: account.id,
+      tokenHash: resetTokenHash,
+      expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+    });
+
+    try {
+      await emailService.sendPlatformPasswordResetEmail({
+        email: account.email,
+        resetToken,
+      });
+    } catch (error) {
+      await platformPasswordResetRepository
+        .deleteByAccountId(account.id)
+        .catch(() => undefined);
+
+      throw error;
+    }
+
+    return resetToken;
+  }
+
+  async forgotPassword(email: string) {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const account =
+      await platformAccountRepository.findByEmail(normalizedEmail);
+
+    /*
+     * Always return the same result for unknown accounts.
+     * This prevents account enumeration.
+     */
+    if (!account) {
+      return;
+    }
+
+    /*
+     * Password reset should only be issued for verified
+     * platform accounts.
+     */
+    if (!account.emailVerified) {
+      return;
+    }
+
+    const resetToken = await this.sendPasswordResetEmail({
+      id: account.id,
+      email: account.email,
+    });
+
+    if (config.isTest) {
+      return {
+        resetToken,
+      };
+    }
+
+    return;
+  }
+
+  async resetPassword(token: string, password: string): Promise<void> {
+    const session = await mongoose.startSession();
+
+    try {
+      session.startTransaction();
+
+      const tokenHash = tokenHashService.hash(token);
+
+      const resetToken =
+        await platformPasswordResetRepository.findByTokenHash(tokenHash);
+
+      if (!resetToken) {
+        throw new AppError("Invalid or expired token.", 400, true);
+      }
+
+      if (resetToken.expiresAt.getTime() <= Date.now()) {
+        throw new AppError("Invalid or expired token.", 400, true);
+      }
+
+      const account = await platformAccountRepository.findById(
+        resetToken.platformAccountId.toString(),
+      );
+
+      if (!account) {
+        throw new AppError("Invalid or expired token.", 400, true);
+      }
+
+      const passwordHashed = await passwordService.hash(password);
+
+      const updatedAccount = await platformAccountRepository.updatePassword(
+        account.id,
+        passwordHashed,
+        session,
+      );
+
+      if (!updatedAccount) {
+        throw new AppError("Unable to reset password.", 400, true);
+      }
+
+      await platformPasswordResetRepository.deleteById(resetToken.id, session);
+
+      /*
+       * A password reset invalidates every existing
+       * platform session.
+       */
+      await platformSessionRepository.deleteByAccountId(account._id, session);
+
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
+    }
   }
 
   async refreshToken(
@@ -270,6 +469,86 @@ export class PlatformAuthService {
     await platformSessionRepository.deleteOtherSessions(
       platformAccountId,
       currentSessionId,
+    );
+  }
+
+  async resendVerificationEmail(email: string): Promise<void> {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const account =
+      await platformAccountRepository.findByEmail(normalizedEmail);
+
+    /*
+     * Always return successfully for unknown accounts.
+     * This prevents email/account enumeration.
+     */
+    if (!account) {
+      return;
+    }
+
+    /*
+     * A verified account does not need another verification email.
+     * Keep the response identical to the unknown-account case.
+     */
+    if (account.emailVerified) {
+      return;
+    }
+
+    const verification = await emailVerificationService.createVerificationToken(
+      account.id,
+    );
+
+    try {
+      await emailService.sendVerificationEmail({
+        email: account.email,
+        verificationToken: verification.token,
+      });
+    } catch (error) {
+      /*
+       * Do not leave an active token behind when email delivery fails.
+       */
+      await emailVerificationService
+        .deleteActiveVerificationTokens(account.id)
+        .catch(() => undefined);
+
+      throw error;
+    }
+  }
+
+  async changePassword(
+    accountId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    const account =
+      await platformAccountRepository.findByIdWithPassword(accountId);
+
+    if (!account) {
+      throw new AppError("Account not found.", 404, true);
+    }
+
+    const isCurrentPasswordValid = await passwordService.verify(
+      account.passwordHashed,
+      currentPassword,
+    );
+
+    if (!isCurrentPasswordValid) {
+      throw new AppError("Current password is incorrect.", 400, true);
+    }
+
+    const passwordHashed = await passwordService.hash(newPassword);
+
+    const updatedAccount = await platformAccountRepository.updatePassword(
+      accountId,
+      passwordHashed,
+    );
+
+    if (!updatedAccount) {
+      throw new AppError("Unable to change password.", 400, true);
+    }
+
+    await platformSessionRepository.deleteByAccountId(
+      new Types.ObjectId(accountId),
     );
   }
 }

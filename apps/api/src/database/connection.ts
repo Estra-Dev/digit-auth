@@ -4,7 +4,9 @@ import { config } from "../config/index.js";
 
 export const connectDatabase = async () => {
   try {
-    await mongoose.connect(config.MONGODB_URI);
+    await mongoose.connect(
+      config.isTest ? config.MONGODB_TEST_URI : config.MONGODB_URI,
+    );
 
     logger.info("MONGODB CONNECTED");
   } catch (error) {

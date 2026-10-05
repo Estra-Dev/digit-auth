@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import { getPlatformAccount } from "@/lib/platform-auth/platform-auth";
+import { useWorkspace } from "@/lib/workspace/workspace-context";
 import type { PlatformAccount } from "@/types/platform-auth";
 
 type PlatformHeaderProps = {
@@ -10,6 +12,8 @@ type PlatformHeaderProps = {
 
 export default function PlatformHeader({ onMenuClick }: PlatformHeaderProps) {
   const [account, setAccount] = useState<PlatformAccount | null>(null);
+
+  const { workspace } = useWorkspace();
 
   useEffect(() => {
     let cancelled = false;
@@ -59,14 +63,16 @@ export default function PlatformHeader({ onMenuClick }: PlatformHeaderProps) {
 
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-white">
-            Platform Dashboard
+            {workspace.name}
           </p>
+
+          <p className="truncate text-xs text-slate-500">Workspace</p>
         </div>
       </div>
 
       <div className="ml-4 min-w-0 text-right">
         <p className="max-w-45 truncate text-sm text-slate-300 sm:max-w-xs">
-          {account?.email ?? "Platform owner"}
+          {account?.email ?? "Workspace account"}
         </p>
 
         <p className="text-xs text-slate-500">

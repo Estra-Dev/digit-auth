@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import { getPlatformUser } from "@/lib/platform-auth/platform-auth";
+import { useWorkspace } from "@/lib/workspace/workspace-context";
 import type { PlatformUser } from "@/types/platform-auth";
 
 export default function PlatformUserDetailsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const { workspace } = useWorkspace();
 
   const userId = params.id;
 
@@ -67,7 +69,7 @@ export default function PlatformUserDetailsPage() {
       <main className="min-h-[calc(100vh-4rem)] bg-slate-950 px-4 py-6 text-white sm:px-6 sm:py-10">
         <div className="mx-auto max-w-5xl">
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <p className="text-sm text-slate-400">Loading user...</p>
+            <p className="text-sm text-slate-400">Loading workspace user...</p>
           </div>
         </div>
       </main>
@@ -109,6 +111,8 @@ export default function PlatformUserDetailsPage() {
         {/* Header */}
         <div className="mt-8 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
+            <p className="mb-3 text-sm text-slate-500">{workspace.name}</p>
+
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="wrap-break-word text-2xl font-bold tracking-tight sm:text-3xl">
                 {user.firstName} {user.lastName}
@@ -157,7 +161,7 @@ export default function PlatformUserDetailsPage() {
             <h2 className="text-lg font-semibold">User information</h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              Account information for this DigitAuth user.
+              Account information for this user in your DigitAuth workspace.
             </p>
           </div>
 
@@ -202,7 +206,8 @@ export default function PlatformUserDetailsPage() {
             <h2 className="text-lg font-semibold">Application</h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              The DigitAuth application this user belongs to.
+              The DigitAuth application this user belongs to within your
+              workspace.
             </p>
           </div>
 
@@ -256,13 +261,13 @@ export default function PlatformUserDetailsPage() {
           )}
         </section>
 
-        {/* User ID */}
+        {/* System information */}
         <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-6">
           <div>
             <h2 className="text-lg font-semibold">System information</h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              Internal identifiers for this user.
+              Internal identifiers for this workspace user.
             </p>
           </div>
 

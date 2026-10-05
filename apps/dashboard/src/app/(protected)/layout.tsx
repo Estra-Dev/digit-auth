@@ -3,11 +3,21 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  getCurrentWorkspace,
   getPlatformAccount,
   hasPlatformSession,
 } from "@/lib/platform-auth/platform-auth";
 import PlatformSidebar from "@/components/platform/sidebar";
 import PlatformHeader from "@/components/platform/header";
+import { WorkspaceProvider } from "@/lib/workspace/workspace-context";
+
+type Workspace = {
+  id: string;
+  name: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export default function PlatformProtectedLayout({
   children,
@@ -17,6 +27,7 @@ export default function PlatformProtectedLayout({
   const router = useRouter();
 
   const [checking, setChecking] = useState(true);
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -29,9 +40,13 @@ export default function PlatformProtectedLayout({
       }
 
       try {
-        await getPlatformAccount();
+        const [, currentWorkspace] = await Promise.all([
+          getPlatformAccount(),
+          getCurrentWorkspace(),
+        ]);
 
         if (!cancelled) {
+          setWorkspace(currentWorkspace);
           setChecking(false);
         }
       } catch {
@@ -65,7 +80,7 @@ export default function PlatformProtectedLayout({
   if (checking) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-950">
-        <p className="text-sm text-slate-400">Checking authentication...</p>
+        <p className="text-sm text-slate-400">Loading workspace...</p>
       </main>
     );
   }
@@ -81,7 +96,15 @@ export default function PlatformProtectedLayout({
         <div className="min-w-0 flex-1">
           <PlatformHeader onMenuClick={() => setMobileSidebarOpen(true)} />
 
-          <div className="min-w-0">{children}</div>
+          <div className="border-b border-slate-800 bg-slate-950 px-6 py-3">
+            <p className="text-xs text-slate-500">Workspace</p>
+
+            <p className="text-sm font-medium text-white">{workspace?.name}</p>
+          </div>
+
+          <WorkspaceProvider workspace={workspace!}>
+            <div className="min-w-0">{children}</div>
+          </WorkspaceProvider>
         </div>
       </div>
     </div>

@@ -5,10 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { getPlatformUsers } from "@/lib/platform-auth/platform-auth";
+import { useWorkspace } from "@/lib/workspace/workspace-context";
 import type { PlatformUser } from "@/types/platform-auth";
 
 export default function PlatformUsersPage() {
   const router = useRouter();
+  const { workspace } = useWorkspace();
 
   const [users, setUsers] = useState<PlatformUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,7 +94,7 @@ export default function PlatformUsersPage() {
       <main className="min-h-[calc(100vh-4rem)] bg-slate-950 px-4 py-6 text-white sm:px-6 sm:py-10">
         <div className="mx-auto max-w-7xl">
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <p className="text-sm text-slate-400">Loading platform users...</p>
+            <p className="text-sm text-slate-400">Loading workspace users...</p>
           </div>
         </div>
       </main>
@@ -105,14 +107,14 @@ export default function PlatformUsersPage() {
         {/* Header */}
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
-            <p className="text-sm text-slate-400">Platform</p>
+            <p className="text-sm text-slate-400">{workspace.name}</p>
 
             <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
               Users
             </h1>
 
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              View users across all applications connected to DigitAuth.
+              View users across all applications in your DigitAuth workspace.
             </p>
           </div>
         </div>
@@ -122,7 +124,7 @@ export default function PlatformUsersPage() {
           <StatCard
             label="Total users"
             value={users.length}
-            description="Across all applications"
+            description="Across all workspace applications"
           />
 
           <StatCard
@@ -213,11 +215,8 @@ export default function PlatformUsersPage() {
                 className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-slate-500"
               >
                 <option value="ALL">All statuses</option>
-
                 <option value="ACTIVE">Active</option>
-
                 <option value="SUSPENDED">Suspended</option>
-
                 <option value="DEACTIVATED">Deactivated</option>
               </select>
             </div>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { getPlatformApplicationSessions } from "@/lib/platform-auth/platform-auth";
+import { useWorkspace } from "@/lib/workspace/workspace-context";
 import type { PlatformApplicationSession } from "@/types/platform-auth";
 
 function formatDate(value: string) {
@@ -30,6 +31,8 @@ function getDeviceLabel(userAgent: string | null) {
 }
 
 export default function PlatformSessionsPage() {
+  const { workspace } = useWorkspace();
+
   const [sessions, setSessions] = useState<PlatformApplicationSession[]>([]);
   const [search, setSearch] = useState("");
   const [applicationFilter, setApplicationFilter] = useState("ALL");
@@ -129,13 +132,17 @@ export default function PlatformSessionsPage() {
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-white">
+              <p className="text-sm font-medium text-slate-400">
+                {workspace.name}
+              </p>
+
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white">
                 Sessions
               </h1>
 
               <p className="mt-1 text-sm text-slate-400">
-                Monitor authenticated sessions across all DigitAuth
-                applications.
+                Monitor authenticated sessions across all applications in your
+                DigitAuth workspace.
               </p>
             </div>
           </div>
@@ -212,7 +219,9 @@ export default function PlatformSessionsPage() {
         <section className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/60">
           {loading ? (
             <div className="flex min-h-64 items-center justify-center">
-              <p className="text-sm text-slate-400">Loading sessions...</p>
+              <p className="text-sm text-slate-400">
+                Loading workspace sessions...
+              </p>
             </div>
           ) : filteredSessions.length === 0 ? (
             <div className="flex min-h-64 items-center justify-center px-6 text-center">
@@ -405,7 +414,8 @@ export default function PlatformSessionsPage() {
 
         {!loading && filteredSessions.length > 0 && (
           <p className="mt-4 text-xs text-slate-500">
-            Showing {filteredSessions.length} of {sessions.length} sessions.
+            Showing {filteredSessions.length} of {sessions.length} workspace
+            sessions.
           </p>
         )}
       </div>

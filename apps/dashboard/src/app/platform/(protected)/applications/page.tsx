@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+
 import {
   activatePlatformApplication,
   createPlatformApplication,
@@ -12,12 +13,13 @@ import type {
   PlatformApplication,
   PlatformApplicationCredentials,
 } from "@/types/platform-auth";
+import { useWorkspace } from "@/lib/workspace/workspace-context";
 
 export default function PlatformApplicationsPage() {
   const router = useRouter();
 
+  const { workspace } = useWorkspace();
   const [applications, setApplications] = useState<PlatformApplication[]>([]);
-
   const [name, setName] = useState("");
   const [credentials, setCredentials] =
     useState<PlatformApplicationCredentials | null>(null);
@@ -151,7 +153,7 @@ export default function PlatformApplicationsPage() {
     <main className="min-h-[calc(100vh-4rem)] bg-slate-950 text-white">
       <div className="mx-auto max-w-7xl px-6 py-10">
         <div className="mb-8">
-          <p className="text-sm text-slate-500">Platform Management</p>
+          <p className="text-sm text-slate-500">{workspace.name}</p>
 
           <div className="mt-1 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -160,7 +162,8 @@ export default function PlatformApplicationsPage() {
               </h1>
 
               <p className="mt-2 text-sm text-slate-400">
-                Create and manage applications connected to DigitAuth.
+                Create and manage applications connected to your DigitAuth
+                workspace.
               </p>
             </div>
 
@@ -295,7 +298,7 @@ export default function PlatformApplicationsPage() {
               <h2 className="font-semibold">Your applications</h2>
 
               <p className="mt-1 text-xs text-slate-500">
-                Applications registered on your DigitAuth platform.
+                Applications registered in {workspace.name}.
               </p>
             </div>
 

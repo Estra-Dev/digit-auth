@@ -427,7 +427,6 @@ export class AuthService {
     try {
       await emailService.sendVerificationEmail({
         email: user.email,
-        firstName: user.firstName,
         verificationToken,
       });
     } catch (error) {

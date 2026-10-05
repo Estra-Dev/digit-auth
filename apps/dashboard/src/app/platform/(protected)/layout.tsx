@@ -2,12 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+
+import PlatformSidebar from "@/components/platform/sidebar";
+import PlatformHeader from "@/components/platform/header";
 import {
+  getCurrentWorkspace,
   getPlatformAccount,
   hasPlatformSession,
 } from "@/lib/platform-auth/platform-auth";
-import PlatformSidebar from "@/components/platform/sidebar";
-import PlatformHeader from "@/components/platform/header";
+import { WorkspaceProvider } from "@/lib/workspace/workspace-context";
+
+type Workspace = {
+  id: string;
+  name: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export default function PlatformProtectedLayout({
   children,
@@ -17,8 +28,8 @@ export default function PlatformProtectedLayout({
   const router = useRouter();
 
   const [checking, setChecking] = useState(true);
-  const [mobileSidebarOpen, setMobileSidebarOpen] =
-    useState(false);
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,9 +41,13 @@ export default function PlatformProtectedLayout({
       }
 
       try {
-        await getPlatformAccount();
+        const [, currentWorkspace] = await Promise.all([
+          getPlatformAccount(),
+          getCurrentWorkspace(),
+        ]);
 
         if (!cancelled) {
+          setWorkspace(currentWorkspace);
           setChecking(false);
         }
       } catch {
@@ -59,43 +74,34 @@ export default function PlatformProtectedLayout({
     window.addEventListener("resize", handleResize);
 
     return () => {
-      window.removeEventListener(
-        "resize",
-        handleResize,
-      );
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
-  if (checking) {
+  if (checking || !workspace) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-950">
-        <p className="text-sm text-slate-400">
-          Checking authentication...
-        </p>
+        <p className="text-sm text-slate-400">Loading workspace...</p>
       </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      <div className="flex min-h-screen">
-        <PlatformSidebar
-          mobileOpen={mobileSidebarOpen}
-          onClose={() => setMobileSidebarOpen(false)}
-        />
-
-        <div className="min-w-0 flex-1">
-          <PlatformHeader
-            onMenuClick={() =>
-              setMobileSidebarOpen(true)
-            }
+    <WorkspaceProvider workspace={workspace}>
+      <div className="min-h-screen bg-slate-950">
+        <div className="flex min-h-screen">
+          <PlatformSidebar
+            mobileOpen={mobileSidebarOpen}
+            onClose={() => setMobileSidebarOpen(false)}
           />
 
-          <div className="min-w-0">
-            {children}
+          <div className="min-w-0 flex-1">
+            <PlatformHeader onMenuClick={() => setMobileSidebarOpen(true)} />
+
+            <div className="min-w-0">{children}</div>
           </div>
         </div>
       </div>
-    </div>
+    </WorkspaceProvider>
   );
 }

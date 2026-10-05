@@ -1,78 +1,57 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-import {
-  platformLogin,
-  resendPlatformVerificationEmail,
-} from "@/lib/platform-auth/platform-auth";
+import { platformRegister } from "@/lib/platform-auth/platform-auth";
 
-export default function PlatformLoginPage() {
+export default function PlatformRegisterPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
   const [loading, setLoading] = useState(false);
-  const [resending, setResending] = useState(false);
-
-  const [requiresVerification, setRequiresVerification] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setError("");
-    setSuccess("");
-    setRequiresVerification(false);
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await platformLogin(email, password);
+      await platformRegister(email, password);
 
-      router.push("/platform/dashboard");
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unable to sign in.";
-
-      setError(message);
-
-      if (message.toLowerCase().includes("verify")) {
-        setRequiresVerification(true);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleResendVerification() {
-    setError("");
-    setSuccess("");
-    setResending(true);
-
-    try {
-      await resendPlatformVerificationEmail(email);
-
-      setSuccess(
-        "If an unverified account exists for this email, a verification email has been sent.",
+      router.push(
+        `/platform/register/success?email=${encodeURIComponent(email)}`,
       );
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
-          : "Unable to resend verification email.",
+          : "Unable to create your account.",
       );
     } finally {
-      setResending(false);
+      setLoading(false);
     }
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6">
+    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold tracking-tight text-white">
@@ -86,10 +65,12 @@ export default function PlatformLoginPage() {
 
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl">
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-white">Welcome back</h2>
+            <h2 className="text-xl font-semibold text-white">
+              Create your account
+            </h2>
 
             <p className="mt-1 text-sm text-slate-400">
-              Sign in to access your DigitAuth workspace.
+              Create a DigitAuth workspace and start building.
             </p>
           </div>
 
@@ -127,19 +108,33 @@ export default function PlatformLoginPage() {
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="Enter your password"
-                autoComplete="current-password"
+                placeholder="At least 8 characters"
+                autoComplete="new-password"
+                minLength={8}
                 required
                 className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-slate-500 focus:ring-2 focus:ring-slate-700"
               />
             </div>
-            <div className="flex justify-end">
-              <Link
-                href="/platform/forgot-password"
-                className="text-sm text-primary hover:underline"
+
+            <div>
+              <label
+                htmlFor="confirmPassword"
+                className="mb-2 block text-sm font-medium text-slate-300"
               >
-                Forgot password?
-              </Link>
+                Confirm password
+              </label>
+
+              <input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                placeholder="Re-enter your password"
+                autoComplete="new-password"
+                minLength={8}
+                required
+                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-slate-500 focus:ring-2 focus:ring-slate-700"
+              />
             </div>
 
             {error && (
@@ -148,47 +143,25 @@ export default function PlatformLoginPage() {
               </div>
             )}
 
-            {success && (
-              <div className="rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-400">
-                {success}
-              </div>
-            )}
-
             <button
               type="submit"
               disabled={loading}
               className="w-full rounded-lg bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? "Creating account..." : "Create account"}
             </button>
           </form>
 
-          {requiresVerification && (
-            <div className="mt-5 rounded-lg border border-slate-700 bg-slate-950/60 p-4">
-              <p className="text-sm text-slate-400">
-                Your email address has not been verified yet. Check your inbox
-                for the verification email.
-              </p>
-
-              <button
-                type="button"
-                onClick={handleResendVerification}
-                disabled={resending}
-                className="mt-3 text-sm font-medium text-white transition hover:text-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {resending ? "Sending..." : "Resend verification email"}
-              </button>
-            </div>
-          )}
-
           <div className="mt-6 border-t border-slate-800 pt-6 text-center">
-            <p className="text-sm text-slate-500">Need a DigitAuth account?</p>
+            <p className="text-sm text-slate-500">
+              Already have a DigitAuth account?
+            </p>
 
             <Link
-              href="/platform/register"
+              href="/platform/login"
               className="mt-2 inline-block text-sm font-medium text-slate-300 transition hover:text-white"
             >
-              Create an account
+              Sign in
             </Link>
           </div>
         </div>

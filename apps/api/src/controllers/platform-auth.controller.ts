@@ -5,14 +5,49 @@ import { platformAuthService } from "../modules/platform-auth/service/platform-a
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 import type {
+  PlatformRegisterInput,
   PlatformLoginInput,
   PlatformRefreshTokenInput,
   PlatformLogoutInput,
+  PlatformResendVerificationEmailInput,
+  PlatformForgotPasswordInput,
+  PlatformResetPasswordInput,
+  PlatformChangePasswordInput,
 } from "../validators/platform-auth.validator.js";
 
 type SessionParams = {
   id: string;
 };
+
+export const platformRegister = asyncHandler(
+  async (req: Request, res: Response) => {
+    const body = req.body as PlatformRegisterInput;
+
+    const result = await platformAuthService.register(
+      body.email,
+      body.password,
+    );
+
+    return ApiResponse.success(res, {
+      statusCode: 201,
+      message: "Account created successfully.",
+      data: result,
+    });
+  },
+);
+
+export const resendPlatformVerificationEmail = asyncHandler(
+  async (req: Request, res: Response) => {
+    const body = req.body as PlatformResendVerificationEmailInput;
+    await platformAuthService.resendVerificationEmail(body.email);
+    return ApiResponse.success(res, {
+      statusCode: 200,
+      message:
+        "If an unverified account exists for this email, a verification email has been sent.",
+      data: null,
+    });
+  },
+);
 
 export const platformLogin = asyncHandler(
   async (req: Request, res: Response) => {
@@ -143,6 +178,53 @@ export const revokeOtherPlatformSessions = asyncHandler(
     return ApiResponse.success(res, {
       statusCode: 200,
       message: "Other platform sessions revoked successfully.",
+      data: null,
+    });
+  },
+);
+
+export const forgotPlatformPassword = asyncHandler(
+  async (req: Request, res: Response) => {
+    const body = req.body as PlatformForgotPasswordInput;
+
+    const result = await platformAuthService.forgotPassword(body.email);
+
+    return ApiResponse.success(res, {
+      statusCode: 200,
+      message:
+        "If an account exists for this email, a password reset link has been sent.",
+      data: result ?? null,
+    });
+  },
+);
+
+export const resetPlatformPassword = asyncHandler(
+  async (req: Request, res: Response) => {
+    const body = req.body as PlatformResetPasswordInput;
+
+    await platformAuthService.resetPassword(body.token, body.password);
+
+    return ApiResponse.success(res, {
+      statusCode: 200,
+      message: "Password reset successfully. Please log in again.",
+      data: null,
+    });
+  },
+);
+
+export const changePlatformPassword = asyncHandler(
+  async (req: Request, res: Response) => {
+    const body = req.body as PlatformChangePasswordInput;
+
+    await platformAuthService.changePassword(
+      req.platformAccount!.id,
+      body.currentPassword,
+      body.newPassword,
+    );
+
+    return ApiResponse.success(res, {
+      statusCode: 200,
+      message: "Password changed successfully. Please log in again.",
       data: null,
     });
   },

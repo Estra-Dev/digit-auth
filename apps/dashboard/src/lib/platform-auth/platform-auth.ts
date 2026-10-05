@@ -87,6 +87,99 @@ export async function platformLogin(
 
   return response.data;
 }
+export async function resendPlatformVerificationEmail(
+  email: string,
+): Promise<void> {
+  await request<{
+    success: boolean;
+    message: string;
+    data: null;
+  }>("/platform/auth/resend-verification-email", {
+    method: "POST",
+    body: JSON.stringify({
+      email,
+    }),
+  });
+}
+
+export async function platformForgotPassword(email: string): Promise<void> {
+  await request<{
+    success: boolean;
+    message: string;
+    data: null;
+  }>("/platform/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({
+      email,
+    }),
+  });
+}
+
+export async function platformResetPassword(
+  token: string,
+  password: string,
+): Promise<void> {
+  await request<{
+    success: boolean;
+    message: string;
+    data: null;
+  }>("/platform/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({
+      token,
+      password,
+    }),
+  });
+}
+
+export async function platformRegister(
+  email: string,
+  password: string,
+): Promise<{
+  account: {
+    id: string;
+    email: string;
+    emailVerified: boolean;
+    status: string;
+    createdAt: string;
+  };
+  workspace: {
+    id: string;
+    name: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+}> {
+  const response = await request<{
+    success: boolean;
+    message: string;
+    data: {
+      account: {
+        id: string;
+        email: string;
+        emailVerified: boolean;
+        status: string;
+        createdAt: string;
+      };
+      workspace: {
+        id: string;
+        name: string;
+        status: string;
+        createdAt: string;
+        updatedAt: string;
+      };
+    };
+  }>("/platform/auth/register", {
+    method: "POST",
+    body: JSON.stringify({
+      email,
+      password,
+    }),
+  });
+
+  return response.data;
+}
 
 export async function platformRefreshToken(): Promise<PlatformRefreshResponse> {
   const refreshToken = getRefreshToken();
@@ -119,6 +212,30 @@ export async function getPlatformAccount(): Promise<PlatformAccount> {
   }>("/platform/auth/me");
 
   return response.data;
+}
+
+export async function getCurrentWorkspace(): Promise<{
+  id: string;
+  name: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}> {
+  const response = await request<{
+    success: boolean;
+    message: string;
+    data: {
+      workspace: {
+        id: string;
+        name: string;
+        status: string;
+        createdAt: string;
+        updatedAt: string;
+      };
+    };
+  }>("/workspace/me");
+
+  return response.data.workspace;
 }
 
 export async function getPlatformSessions(): Promise<PlatformSession[]> {
@@ -286,6 +403,54 @@ export async function platformLogoutAll(): Promise<void> {
   } finally {
     clearTokens();
   }
+}
+
+export async function verifyPlatformEmail(token: string): Promise<{
+  account: {
+    id: string;
+    email: string;
+    emailVerified: boolean;
+    status: string;
+  };
+}> {
+  const response = await request<{
+    success: boolean;
+    message: string;
+    data: {
+      account: {
+        id: string;
+        email: string;
+        emailVerified: boolean;
+        status: string;
+      };
+    };
+  }>("/platform/auth/verify-email", {
+    method: "POST",
+    body: JSON.stringify({
+      token,
+    }),
+  });
+
+  return response.data;
+}
+
+export async function changePlatformPassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  await request<{
+    success: boolean;
+    message: string;
+    data: null;
+  }>("/platform/auth/password", {
+    method: "PATCH",
+    body: JSON.stringify({
+      currentPassword,
+      newPassword,
+    }),
+  });
+
+  clearTokens();
 }
 
 export function clearPlatformAuth() {

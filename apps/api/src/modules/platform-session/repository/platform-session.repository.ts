@@ -95,10 +95,16 @@ export class PlatformSessionRepository {
     return PlatformSession.findByIdAndDelete(sessionId);
   }
 
-  async deleteByAccountId(platformAccountId: Types.ObjectId): Promise<void> {
-    await PlatformSession.deleteMany({
-      platformAccountId,
-    });
+  async deleteByAccountId(
+    platformAccountId: Types.ObjectId,
+    session?: import("mongoose").ClientSession,
+  ): Promise<void> {
+    await PlatformSession.deleteMany(
+      {
+        platformAccountId,
+      },
+      session ? { session } : undefined,
+    );
   }
 
   async deleteOtherSessions(

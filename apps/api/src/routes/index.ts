@@ -10,6 +10,7 @@ import platformAuthRouter from "./platform-auth.route.js";
 import platformApplicationRouter from "./platform-application.route.js";
 import platformUserRouter from "../modules/platform-user/routes/platform-user.routes.js";
 import platformSessionRouter from "../modules/platform-session/routes/platform-session.routes.js";
+import workspaceRoutes from "./workspace.routes.js";
 
 export const registerRoutes = (app: Express) => {
   app.get("/", (req, res) => {
@@ -32,5 +33,6 @@ export const registerRoutes = (app: Express) => {
   app.use("/api/v1/security", securityRouter);
   app.use("/api/v1/profile", profileRouter);
   app.use("/api/v1/admin", adminRouter);
+  app.use("/api/v1/workspace", workspaceRoutes);
   // app.use("/api/v1/health", healthRouter);
 };

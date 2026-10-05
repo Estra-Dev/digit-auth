@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+
 import { platformLogout } from "@/lib/platform-auth/platform-auth";
+import { useWorkspace } from "@/lib/workspace/workspace-context";
 
 const navigation = [
   { name: "Overview", href: "/platform/dashboard" },
@@ -22,6 +24,8 @@ export default function PlatformSidebar({
 }: PlatformSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+
+  const { workspace } = useWorkspace();
 
   async function handleLogout() {
     await platformLogout();
@@ -48,10 +52,12 @@ export default function PlatformSidebar({
         ].join(" ")}
       >
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-800 px-5">
-          <div>
+          <div className="min-w-0">
             <h1 className="text-lg font-bold text-white">DigitAuth</h1>
 
-            <p className="mt-0.5 text-xs text-slate-500">Platform</p>
+            <p className="mt-0.5 truncate text-xs text-slate-500">
+              {workspace.name}
+            </p>
           </div>
 
           <button
@@ -99,6 +105,16 @@ export default function PlatformSidebar({
         </nav>
 
         <div className="shrink-0 border-t border-slate-800 p-4">
+          <div className="mb-3 rounded-lg bg-slate-900 px-4 py-3">
+            <p className="text-xs text-slate-500">Workspace</p>
+
+            <p className="mt-1 truncate text-sm font-medium text-slate-300">
+              {workspace.name}
+            </p>
+
+            <p className="mt-1 text-xs text-slate-500">{workspace.status}</p>
+          </div>
+
           <button
             type="button"
             onClick={() => void handleLogout()}

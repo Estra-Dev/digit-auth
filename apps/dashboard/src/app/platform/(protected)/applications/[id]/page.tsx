@@ -12,10 +12,12 @@ import type {
   PlatformApplication,
   PlatformApplicationCredentials,
 } from "@/types/platform-auth";
+import { useWorkspace } from "@/lib/workspace/workspace-context";
 
 export default function PlatformApplicationDetailsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const { workspace } = useWorkspace();
 
   const applicationId = params.id;
 
@@ -180,8 +182,9 @@ export default function PlatformApplicationDetailsPage() {
 
         <div className="mt-8 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
+            <p className="mb-3 text-sm text-slate-500">{workspace.name}</p>
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="break-words text-3xl font-bold tracking-tight">
+              <h1 className="wrap-break-word text-3xl font-bold tracking-tight">
                 {application.name}
               </h1>
 
@@ -234,7 +237,7 @@ export default function PlatformApplicationDetailsPage() {
             <h2 className="text-lg font-semibold">Application information</h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              Basic information and identifiers for this application.
+              Basic information and identifiers for this workspace application.
             </p>
           </div>
 
@@ -278,7 +281,7 @@ export default function PlatformApplicationDetailsPage() {
 
               <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-400">
                 The client secret is used by your application when communicating
-                securely with DigitAuth.
+                securely with the DigitAuth authentication service.
               </p>
             </div>
 
