@@ -20,6 +20,7 @@ describe("Admin User Management", () => {
     const response = await authenticatedRequest(
       admin.accessToken,
       admin.clientId,
+      admin.clientSecret,
     ).get("/api/v1/admin/users");
 
     expect(response.status).toBe(200);
@@ -32,6 +33,7 @@ describe("Admin User Management", () => {
     const response = await authenticatedRequest(
       user.accessToken,
       user.clientId,
+      user.clientSecret,
     ).get("/api/v1/admin/users");
 
     expect(response.status).toBe(403);
@@ -42,6 +44,7 @@ describe("Admin User Management", () => {
     const response = await authenticatedRequest(
       "invalid-token",
       "invalid-client-id",
+      "invalid-client-secret",
     ).get("/api/v1/admin/users");
 
     expect(response.status).toBe(401);
@@ -56,6 +59,7 @@ describe("Admin User Management", () => {
     const response = await authenticatedRequest(
       admin.accessToken,
       admin.clientId,
+      admin.clientSecret,
     ).get(`/api/v1/admin/users/${target.user.id}`);
 
     expect(response.status).toBe(200);
@@ -70,6 +74,7 @@ describe("Admin User Management", () => {
     const response = await authenticatedRequest(
       admin.accessToken,
       admin.clientId,
+      admin.clientSecret,
     ).get(`/api/v1/admin/users/${fakeUserId}`);
 
     expect(response.status).toBe(404);
@@ -84,6 +89,7 @@ describe("Admin User Management", () => {
     const response = await authenticatedRequest(
       admin.accessToken,
       admin.clientId,
+      admin.clientSecret,
     )
       .patch(`/api/v1/admin/users/${target.user.id}`)
       .send({
@@ -103,6 +109,7 @@ describe("Admin User Management", () => {
     const response = await authenticatedRequest(
       admin.accessToken,
       admin.clientId,
+      admin.clientSecret,
     ).delete(`/api/v1/admin/users/${target.user.id}`);
 
     expect(response.status).toBe(200);
@@ -122,6 +129,7 @@ describe("Admin User Management", () => {
     const response = await authenticatedRequest(
       admin.accessToken,
       admin.clientId,
+      admin.clientSecret,
     ).get("/api/v1/admin/users/not-a-valid-id");
 
     expect(response.status).toBe(500);
@@ -139,6 +147,7 @@ describe("Admin User Management", () => {
     const response = await authenticatedRequest(
       admin.accessToken,
       admin.clientId,
+      admin.clientSecret,
     ).get(`/api/v1/admin/users/${otherApplicationUser.user.id}`);
 
     expect(response.status).toBe(404);

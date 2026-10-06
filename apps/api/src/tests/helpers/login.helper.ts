@@ -6,16 +6,24 @@ import { createAdminUser, createVerifiedUser } from "./user.factory.js";
 
 import { buildLoginPayload } from "./factories.js";
 
-async function login(email: string, password: string, clientId: string) {
-  const response = await request(app)
-    .post("/api/v1/auth/login")
-    .set("X-DigitAuth-Client-Id", clientId)
-    .send(
-      buildLoginPayload({
-        email,
-        password,
-      }),
-    );
+import { withApplicationCredentials } from "./application-auth.helper.js";
+
+async function login(
+  email: string,
+  password: string,
+  clientId: string,
+  clientSecret: string,
+) {
+  const response = await withApplicationCredentials(
+    request(app).post("/api/v1/auth/login"),
+    clientId,
+    clientSecret,
+  ).send(
+    buildLoginPayload({
+      email,
+      password,
+    }),
+  );
 
   if (response.status !== 200) {
     throw new Error(
@@ -31,7 +39,12 @@ async function login(email: string, password: string, clientId: string) {
 export async function loginAsVerifiedUser() {
   const created = await createVerifiedUser();
 
-  const data = await login(created.email, created.password, created.clientId);
+  const data = await login(
+    created.email,
+    created.password,
+    created.clientId,
+    created.clientSecret,
+  );
 
   return {
     ...created,
@@ -43,7 +56,12 @@ export async function loginAsVerifiedUser() {
 export async function loginAsAdmin() {
   const created = await createAdminUser();
 
-  const data = await login(created.email, created.password, created.clientId);
+  const data = await login(
+    created.email,
+    created.password,
+    created.clientId,
+    created.clientSecret,
+  );
 
   return {
     ...created,
@@ -52,10 +70,15 @@ export async function loginAsAdmin() {
   };
 }
 
-export function authenticatedRequest(accessToken: string, clientId: string) {
+export function authenticatedRequest(
+  accessToken: string,
+  clientId: string,
+  clientSecret: string,
+) {
   const headers = {
     Authorization: `Bearer ${accessToken}`,
     "X-DigitAuth-Client-Id": clientId,
+    "X-DigitAuth-Client-Secret": clientSecret,
   };
 
   return {

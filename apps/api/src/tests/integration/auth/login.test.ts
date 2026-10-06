@@ -12,20 +12,22 @@ import { createVerifiedUser } from "../../helpers/auth.helper.js";
 import { Session } from "../../../modules/auth/model/session.model.js";
 
 import { tokenHashService } from "../../../security/index.js";
+import { withApplicationCredentials } from "../../helpers/application-auth.helper.js";
 
 describe("POST /api/v1/auth/login", () => {
   it("should login successfully", async () => {
     const createdUser = await createVerifiedUser();
 
-    const response = await request(app)
-      .post("/api/v1/auth/login")
-      .set("X-DigitAuth-Client-Id", createdUser.clientId)
-      .send(
-        buildLoginPayload({
-          email: createdUser.email,
-          password: createdUser.password,
-        }),
-      );
+    const response = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/login"),
+      createdUser.clientId,
+      createdUser.clientSecret,
+    ).send(
+      buildLoginPayload({
+        email: createdUser.email,
+        password: createdUser.password,
+      }),
+    );
 
     expect(response.status).toBe(200);
 
@@ -58,15 +60,16 @@ describe("POST /api/v1/auth/login", () => {
   it("should reject invalid password", async () => {
     const createdUser = await createVerifiedUser();
 
-    const response = await request(app)
-      .post("/api/v1/auth/login")
-      .set("X-DigitAuth-Client-Id", createdUser.clientId)
-      .send(
-        buildLoginPayload({
-          email: createdUser.email,
-          password: "WrongPassword123@",
-        }),
-      );
+    const response = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/login"),
+      createdUser.clientId,
+      createdUser.clientSecret,
+    ).send(
+      buildLoginPayload({
+        email: createdUser.email,
+        password: "WrongPassword123@",
+      }),
+    );
 
     expect(response.status).toBe(401);
 
@@ -78,14 +81,15 @@ describe("POST /api/v1/auth/login", () => {
   it("should reject unknown email", async () => {
     const createdUser = await createVerifiedUser();
 
-    const response = await request(app)
-      .post("/api/v1/auth/login")
-      .set("X-DigitAuth-Client-Id", createdUser.clientId)
-      .send(
-        buildLoginPayload({
-          email: "unknown@example.com",
-        }),
-      );
+    const response = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/login"),
+      createdUser.clientId,
+      createdUser.clientSecret,
+    ).send(
+      buildLoginPayload({
+        email: "unknown@example.com",
+      }),
+    );
 
     expect(response.status).toBe(401);
 
@@ -96,22 +100,24 @@ describe("POST /api/v1/auth/login", () => {
     const createdUser = await createVerifiedUser();
     const payload = buildRegisterPayload();
 
-    const registerResponse = await request(app)
-      .post("/api/v1/auth/register")
-      .set("X-DigitAuth-Client-Id", createdUser.clientId)
-      .send(payload);
+    const registerResponse = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/register"),
+      createdUser.clientId,
+      createdUser.clientSecret,
+    ).send(payload);
 
     expect(registerResponse.status).toBe(201);
 
-    const response = await request(app)
-      .post("/api/v1/auth/login")
-      .set("X-DigitAuth-Client-Id", createdUser.clientId)
-      .send(
-        buildLoginPayload({
-          email: payload.email,
-          password: payload.password,
-        }),
-      );
+    const response = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/login"),
+      createdUser.clientId,
+      createdUser.clientSecret,
+    ).send(
+      buildLoginPayload({
+        email: payload.email,
+        password: payload.password,
+      }),
+    );
 
     expect(response.status).toBe(403);
 

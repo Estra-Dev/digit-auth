@@ -8,6 +8,7 @@ import { User } from "../../modules/auth/model/user.model.js";
 
 import { buildRegisterPayload } from "./factories.js";
 import { getTestWorkspace } from "./workspace.helper.js";
+import { withApplicationCredentials } from "./application-auth.helper.js";
 
 const applicationService = new ApplicationService();
 
@@ -26,10 +27,11 @@ export async function createVerifiedUser(
 
   const applicationId = new Types.ObjectId(application.id);
 
-  const response = await request(app)
-    .post("/api/v1/auth/register")
-    .set("X-DigitAuth-Client-Id", credentials.clientId)
-    .send(payload);
+  const response = await withApplicationCredentials(
+    request(app).post("/api/v1/auth/register"),
+    credentials.clientId,
+    credentials.clientSecret,
+  ).send(payload);
 
   if (response.status !== 201) {
     throw new Error(
@@ -64,6 +66,7 @@ export async function createVerifiedUser(
     email: payload.email,
     applicationId,
     clientId: credentials.clientId,
+    clientSecret: credentials.clientSecret,
   };
 }
 

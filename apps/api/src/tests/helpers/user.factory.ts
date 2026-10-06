@@ -3,6 +3,7 @@ import { Types } from "mongoose";
 import { UserRole } from "../../authorization/roles.js";
 
 import { ApplicationService } from "../../modules/application/service/application.service.js";
+
 import { UserStatus } from "../../modules/auth/model/user.model.js";
 
 import { userRepository } from "../../modules/auth/repositories/user.repository.js";
@@ -10,6 +11,7 @@ import { userRepository } from "../../modules/auth/repositories/user.repository.
 import { authService } from "../../services/auth.service.js";
 
 import { buildRegisterPayload } from "./factories.js";
+
 import { getTestWorkspace } from "./workspace.helper.js";
 
 type CreateUserOptions = {
@@ -67,6 +69,7 @@ export async function createUser(options: CreateUserOptions = {}) {
   return {
     ...created,
     clientId: credentials.clientId,
+    clientSecret: credentials.clientSecret,
   };
 }
 

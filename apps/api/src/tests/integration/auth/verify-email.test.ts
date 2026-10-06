@@ -10,6 +10,7 @@ import { buildRegisterPayload } from "../../helpers/factories.js";
 
 import { User } from "../../../modules/auth/model/user.model.js";
 import { getTestWorkspace } from "../../helpers/workspace.helper.js";
+import { withApplicationCredentials } from "../../helpers/application-auth.helper.js";
 
 const applicationService = new ApplicationService();
 
@@ -25,18 +26,22 @@ async function createTestApplication() {
   return {
     applicationId: new Types.ObjectId(application.id),
     clientId: credentials.clientId,
+    clientSecret: credentials.clientSecret,
   };
 }
 
 describe("POST /api/v1/auth/verify-email", () => {
   it("should verify a user's email", async () => {
-    const { applicationId, clientId } = await createTestApplication();
+    const { applicationId, clientId, clientSecret } =
+      await createTestApplication();
+
     const payload = buildRegisterPayload();
 
-    const registerResponse = await request(app)
-      .post("/api/v1/auth/register")
-      .set("X-DigitAuth-Client-Id", clientId)
-      .send(payload);
+    const registerResponse = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/register"),
+      clientId,
+      clientSecret,
+    ).send(payload);
 
     expect(registerResponse.status).toBe(201);
 
@@ -44,15 +49,15 @@ describe("POST /api/v1/auth/verify-email", () => {
 
     expect(verificationToken).toBeDefined();
 
-    const response = await request(app)
-      .post("/api/v1/auth/verify-email")
-      .set("X-DigitAuth-Client-Id", clientId)
-      .send({
-        token: verificationToken,
-      });
+    const response = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/verify-email"),
+      clientId,
+      clientSecret,
+    ).send({
+      token: verificationToken,
+    });
 
     expect(response.status).toBe(200);
-
     expect(response.body.success).toBe(true);
 
     const verifiedUser = await User.findOne({
@@ -61,22 +66,21 @@ describe("POST /api/v1/auth/verify-email", () => {
     });
 
     expect(verifiedUser).not.toBeNull();
-
     expect(verifiedUser!.emailVerified).toBe(true);
   });
 
   it("should reject invalid token", async () => {
-    const { clientId } = await createTestApplication();
+    const { clientId, clientSecret } = await createTestApplication();
 
-    const response = await request(app)
-      .post("/api/v1/auth/verify-email")
-      .set("X-DigitAuth-Client-Id", clientId)
-      .send({
-        token: "invalid-token",
-      });
+    const response = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/verify-email"),
+      clientId,
+      clientSecret,
+    ).send({
+      token: "invalid-token",
+    });
 
     expect(response.status).toBe(400);
-
     expect(response.body.success).toBe(false);
   });
 

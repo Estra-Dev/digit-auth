@@ -6,20 +6,21 @@ import app from "../../helpers/app.js";
 import { Session } from "../../../modules/auth/model/session.model.js";
 
 import { loginAsVerifiedUser } from "../../helpers/login.helper.js";
+import { withApplicationCredentials } from "../../helpers/application-auth.helper.js";
 
 describe("POST /api/v1/auth/logout", () => {
   it("should logout successfully", async () => {
     const auth = await loginAsVerifiedUser();
 
-    const response = await request(app)
-      .post("/api/v1/auth/logout")
-      .set("X-DigitAuth-Client-Id", auth.clientId)
-      .send({
-        refreshToken: auth.refreshToken,
-      });
+    const response = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/logout"),
+      auth.clientId,
+      auth.clientSecret,
+    ).send({
+      refreshToken: auth.refreshToken,
+    });
 
     expect(response.status).toBe(200);
-
     expect(response.body.success).toBe(true);
 
     const sessions = await Session.find({
@@ -33,15 +34,15 @@ describe("POST /api/v1/auth/logout", () => {
   it("should reject an invalid refresh token", async () => {
     const auth = await loginAsVerifiedUser();
 
-    const response = await request(app)
-      .post("/api/v1/auth/logout")
-      .set("X-DigitAuth-Client-Id", auth.clientId)
-      .send({
-        refreshToken: "invalid-token",
-      });
+    const response = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/logout"),
+      auth.clientId,
+      auth.clientSecret,
+    ).send({
+      refreshToken: "invalid-token",
+    });
 
     expect(response.status).toBe(401);
-
     expect(response.body.success).toBe(false);
   });
 
@@ -49,12 +50,13 @@ describe("POST /api/v1/auth/logout", () => {
     const applicationA = await loginAsVerifiedUser();
     const applicationB = await loginAsVerifiedUser();
 
-    const response = await request(app)
-      .post("/api/v1/auth/logout")
-      .set("X-DigitAuth-Client-Id", applicationB.clientId)
-      .send({
-        refreshToken: applicationA.refreshToken,
-      });
+    const response = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/logout"),
+      applicationB.clientId,
+      applicationB.clientSecret,
+    ).send({
+      refreshToken: applicationA.refreshToken,
+    });
 
     expect(response.status).toBe(401);
     expect(response.body.success).toBe(false);
@@ -70,13 +72,14 @@ describe("POST /api/v1/auth/logout", () => {
   it("should logout from all devices successfully", async () => {
     const auth = await loginAsVerifiedUser();
 
-    const secondLogin = await request(app)
-      .post("/api/v1/auth/login")
-      .set("X-DigitAuth-Client-Id", auth.clientId)
-      .send({
-        email: auth.email,
-        password: auth.password,
-      });
+    const secondLogin = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/login"),
+      auth.clientId,
+      auth.clientSecret,
+    ).send({
+      email: auth.email,
+      password: auth.password,
+    });
 
     expect(secondLogin.status).toBe(200);
 
@@ -87,12 +90,13 @@ describe("POST /api/v1/auth/logout", () => {
 
     expect(sessionsBeforeLogout).toHaveLength(2);
 
-    const response = await request(app)
-      .post("/api/v1/auth/logout-all")
-      .set("X-DigitAuth-Client-Id", auth.clientId)
-      .send({
-        refreshToken: auth.refreshToken,
-      });
+    const response = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/logout-all"),
+      auth.clientId,
+      auth.clientSecret,
+    ).send({
+      refreshToken: auth.refreshToken,
+    });
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
@@ -109,12 +113,13 @@ describe("POST /api/v1/auth/logout", () => {
     const applicationA = await loginAsVerifiedUser();
     const applicationB = await loginAsVerifiedUser();
 
-    const response = await request(app)
-      .post("/api/v1/auth/logout-all")
-      .set("X-DigitAuth-Client-Id", applicationB.clientId)
-      .send({
-        refreshToken: applicationA.refreshToken,
-      });
+    const response = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/logout-all"),
+      applicationB.clientId,
+      applicationB.clientSecret,
+    ).send({
+      refreshToken: applicationA.refreshToken,
+    });
 
     expect(response.status).toBe(401);
     expect(response.body.success).toBe(false);

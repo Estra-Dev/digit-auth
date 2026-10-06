@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import app from "../../helpers/app.js";
 import { buildLoginPayload } from "../../helpers/factories.js";
 import { createVerifiedUser } from "../../helpers/auth.helper.js";
+import { withApplicationCredentials } from "../../helpers/application-auth.helper.js";
+
 import { User } from "../../../modules/auth/model/user.model.js";
 
 describe("POST /api/v1/auth/login - Account Lock", () => {
@@ -13,15 +15,16 @@ describe("POST /api/v1/auth/login - Account Lock", () => {
     const invalidPassword = "WrongPassword123@";
 
     for (let attempt = 1; attempt <= 5; attempt++) {
-      const response = await request(app)
-        .post("/api/v1/auth/login")
-        .set("X-DigitAuth-Client-Id", createdUser.clientId)
-        .send(
-          buildLoginPayload({
-            email: createdUser.email,
-            password: invalidPassword,
-          }),
-        );
+      const response = await withApplicationCredentials(
+        request(app).post("/api/v1/auth/login"),
+        createdUser.clientId,
+        createdUser.clientSecret,
+      ).send(
+        buildLoginPayload({
+          email: createdUser.email,
+          password: invalidPassword,
+        }),
+      );
 
       if (attempt < 5) {
         expect(response.status).toBe(401);
@@ -59,15 +62,16 @@ describe("POST /api/v1/auth/login - Account Lock", () => {
       },
     );
 
-    const response = await request(app)
-      .post("/api/v1/auth/login")
-      .set("X-DigitAuth-Client-Id", createdUser.clientId)
-      .send(
-        buildLoginPayload({
-          email: createdUser.email,
-          password: createdUser.password,
-        }),
-      );
+    const response = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/login"),
+      createdUser.clientId,
+      createdUser.clientSecret,
+    ).send(
+      buildLoginPayload({
+        email: createdUser.email,
+        password: createdUser.password,
+      }),
+    );
 
     expect(response.status).toBe(423);
     expect(response.body.success).toBe(false);
@@ -88,15 +92,16 @@ describe("POST /api/v1/auth/login - Account Lock", () => {
       },
     );
 
-    const response = await request(app)
-      .post("/api/v1/auth/login")
-      .set("X-DigitAuth-Client-Id", createdUser.clientId)
-      .send(
-        buildLoginPayload({
-          email: createdUser.email,
-          password: createdUser.password,
-        }),
-      );
+    const response = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/login"),
+      createdUser.clientId,
+      createdUser.clientSecret,
+    ).send(
+      buildLoginPayload({
+        email: createdUser.email,
+        password: createdUser.password,
+      }),
+    );
 
     expect(response.status).toBe(200);
 

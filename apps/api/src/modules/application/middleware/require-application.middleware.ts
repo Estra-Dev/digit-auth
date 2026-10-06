@@ -9,6 +9,7 @@ export async function requireApplication(
   next: NextFunction,
 ) {
   const clientId = req.header("X-DigitAuth-Client-Id");
+  const clientSecret = req.header("X-DigitAuth-Client-Secret");
 
   if (!clientId) {
     throw new AppError(
@@ -18,7 +19,18 @@ export async function requireApplication(
     );
   }
 
-  const application = await applicationService.getActiveApplication(clientId);
+  if (!clientSecret) {
+    throw new AppError(
+      "DigitAuth application client secret is required.",
+      401,
+      true,
+    );
+  }
+
+  const application = await applicationService.authenticateApplication(
+    clientId,
+    clientSecret,
+  );
 
   req.application = application;
 

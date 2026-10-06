@@ -163,6 +163,30 @@ export class ApplicationService {
 
     return application;
   }
+
+  async authenticateApplication(clientId: string, clientSecret: string) {
+    const application =
+      await applicationRepository.findByClientIdWithSecret(clientId);
+
+    if (!application) {
+      throw new AppError("Invalid application credentials.", 401, true);
+    }
+
+    const validSecret = await passwordService.verify(
+      application.clientSecretHash,
+      clientSecret,
+    );
+
+    if (!validSecret) {
+      throw new AppError("Invalid application credentials.", 401, true);
+    }
+
+    if (application.status !== ApplicationStatus.ACTIVE) {
+      throw new AppError("Invalid or inactive application.", 401, true);
+    }
+
+    return application;
+  }
 }
 
 export const applicationService = new ApplicationService();
