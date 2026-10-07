@@ -1,10 +1,13 @@
 packages:
   - "apps/*"
   - "packages/*"
+  - "packages/sdk-node/examples/*"
+
 allowBuilds:
   "@scarf/scarf": true
   argon2: true
   esbuild: true
   unrs-resolver: true
+
 overrides:
   "@digit-auth/core": "workspace:*"
