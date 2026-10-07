@@ -31,6 +31,8 @@
   "scripts": {
     "build": "tsc",
     "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "pack:check": "pnpm build && pnpm pack --dry-run"
   },
   "keywords": [
@@ -51,7 +53,8 @@
   "devDependencies": {
     "@types/express": "^5.0.6",
     "express": "^5.2.1",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
   },
   "dependencies": {
     "@digit-auth/core": "^0.1.0"

@@ -10,9 +10,7 @@ export type DigitAuth = {
   client: DigitAuthClient;
 };
 
-export function createDigitAuth(
-  options: DigitAuthOptions,
-): DigitAuth {
+export function createDigitAuth(options: DigitAuthOptions): DigitAuth {
   return {
     client: createDigitAuthClient(options),
   };
