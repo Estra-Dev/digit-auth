@@ -65,6 +65,51 @@ async function main() {
     refreshTokenReceived: Boolean(login.refreshToken),
   });
 
+  console.log("5. Testing live Express authorization routes...");
+
+  const exampleUrl = "http://localhost:3000";
+
+  async function checkRoute(
+    path: string,
+    expectedStatus: number,
+    accessToken?: string,
+  ) {
+    const headers = new Headers();
+
+    if (accessToken) {
+      headers.set("Authorization", `Bearer ${accessToken}`);
+    }
+
+    const response = await fetch(`${exampleUrl}${path}`, { headers });
+
+    const body = await response.json();
+
+    if (response.status !== expectedStatus) {
+      throw new Error(
+        `${path}: expected HTTP ${expectedStatus}, received ${response.status}. Response: ${JSON.stringify(body)}`,
+      );
+    }
+
+    console.log(`✓ ${path} returned HTTP ${response.status}`);
+  }
+
+  // Authentication required.
+  await checkRoute("/me", 401);
+
+  // Normal USER can authenticate and read their profile.
+  await checkRoute("/me", 200, login.accessToken);
+  await checkRoute("/profile", 200, login.accessToken);
+
+  // Normal USER must not access the admin route.
+  await checkRoute("/admin", 403, login.accessToken);
+
+  // Ownership: own resource allowed, another user's denied.
+  await checkRoute(`/users/${login.user.id}`, 200, login.accessToken);
+
+  await checkRoute("/users/another-user-456", 403, login.accessToken);
+
+  console.log("✓ LIVE AUTHORIZATION ROUTE TESTS PASSED");
+
   console.log("4. Fetching current user...");
 
   const currentUser = await auth.client.getCurrentUser(login.accessToken);

@@ -136,11 +136,10 @@ export class DigitAuthClient {
     }
 
     if (!response.ok) {
-      let message = "DigitAuth API request failed.";
-
-      if (isApiResponse<unknown>(body)) {
-        message = body.message;
-      }
+      const message =
+        isApiResponse(body) && typeof body.message === "string"
+          ? body.message
+          : `DigitAuth API request failed with HTTP ${response.status}.`;
 
       throw new DigitAuthError(message, response.status, "API_ERROR");
     }

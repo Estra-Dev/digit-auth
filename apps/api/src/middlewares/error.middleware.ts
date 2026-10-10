@@ -10,6 +10,8 @@ export const errorMiddleware = (
   _next: NextFunction,
 ) => {
   if (err instanceof AppError) {
+    console.error("API AppError:", err.statusCode, err.message);
+
     return ApiResponse.error(res, {
       statusCode: err.statusCode,
       message: err.message,

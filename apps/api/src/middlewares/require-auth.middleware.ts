@@ -44,6 +44,11 @@ export async function requireAuth(
   }
 
   if (payload.applicationId !== req.application._id.toString()) {
+    // console.error("JWT application context mismatch:", {
+    //   tokenApplicationId: payload.applicationId,
+    //   requestApplicationId: req.application._id.toString(),
+    // });
+
     throw new AppError("Invalid authentication context.", 401, true);
   }
 
@@ -54,6 +59,11 @@ export async function requireAuth(
   }
 
   if (!user.applicationId.equals(req.application._id)) {
+    // console.error("User application context mismatch:", {
+    //   userApplicationId: user.applicationId.toString(),
+    //   requestApplicationId: req.application._id.toString(),
+    // });
+
     throw new AppError("Invalid authentication context.", 401, true);
   }
 
