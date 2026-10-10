@@ -1,0 +1,8 @@
+ apps/api/src/middlewares/error.middleware.ts       |   2 [32m+[m
+ .../api/src/middlewares/require-auth.middleware.ts |  10 [32m+[m
+ packages/sdk-node/examples/express/src/server.ts   |  99 [32m++++[m[31m-[m
+ .../examples/express/src/test-sdk-integration.ts   |  45 [32m++[m
+ packages/sdk-node/src/index.ts                     |  34 [32m+[m[31m-[m
+ packages/sdk-node/src/lib/digit-auth-client.ts     |   9 [32m+[m[31m-[m
+ .../sdk-node/src/middleware/authorization.test.ts  | 477 [32m+++++++++++++++++++++[m
+ 7 files changed, 645 insertions(+), 31 deletions(-)
