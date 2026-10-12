@@ -142,6 +142,7 @@ import { createApiClient } from "@digit-auth/react";
 
 const api = createApiClient({
   baseUrl: "https://your-digit-auth-api.example.com/api/v1",
+  publishableKey: import.meta.env.VITE_DIGIT_AUTH_PUBLISHABLE_KEY,
 });
 ```
 

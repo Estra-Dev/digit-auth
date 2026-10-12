@@ -19,7 +19,7 @@ export async function createVerifiedUser(
 
   const workspace = await getTestWorkspace();
 
-  const { application, credentials } =
+  const { application, credentials, publishableKey } =
     await applicationService.createApplication(
       workspace.id,
       "DigitAuth Test Application",
@@ -67,6 +67,7 @@ export async function createVerifiedUser(
     applicationId,
     clientId: credentials.clientId,
     clientSecret: credentials.clientSecret,
+    publishableKey,
   };
 }
 
