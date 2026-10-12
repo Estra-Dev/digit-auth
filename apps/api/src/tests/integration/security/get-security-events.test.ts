@@ -1,23 +1,24 @@
 import request from "supertest";
+import { describe, expect, it } from "vitest";
 
 import app from "../../helpers/app.js";
-import { loginAsVerifiedUser } from "../../helpers/login.helper.js";
-
-import { describe, expect, it } from "vitest";
+import {
+  authenticatedRequest,
+  loginAsVerifiedUser,
+} from "../../helpers/login.helper.js";
 
 describe("GET /api/v1/security/events", () => {
   it("should return current user's security events", async () => {
     const auth = await loginAsVerifiedUser();
 
-    const response = await request(app)
-      .get("/api/v1/security/events")
-      .set("X-DigitAuth-Client-Id", auth.clientId)
-      .set("Authorization", `Bearer ${auth.accessToken}`);
+    const response = await authenticatedRequest(
+      auth.accessToken,
+      auth.clientId,
+      auth.clientSecret,
+    ).get("/api/v1/security/events");
 
     expect(response.status).toBe(200);
-
     expect(response.body.success).toBe(true);
-
     expect(Array.isArray(response.body.data)).toBe(true);
   });
 
@@ -25,7 +26,6 @@ describe("GET /api/v1/security/events", () => {
     const response = await request(app).get("/api/v1/security/events");
 
     expect(response.status).toBe(401);
-
     expect(response.body.success).toBe(false);
   });
 
@@ -33,15 +33,17 @@ describe("GET /api/v1/security/events", () => {
     const firstUser = await loginAsVerifiedUser();
     const secondUser = await loginAsVerifiedUser();
 
-    const firstResponse = await request(app)
-      .get("/api/v1/security/events")
-      .set("X-DigitAuth-Client-Id", firstUser.clientId)
-      .set("Authorization", `Bearer ${firstUser.accessToken}`);
+    const firstResponse = await authenticatedRequest(
+      firstUser.accessToken,
+      firstUser.clientId,
+      firstUser.clientSecret,
+    ).get("/api/v1/security/events");
 
-    const secondResponse = await request(app)
-      .get("/api/v1/security/events")
-      .set("X-DigitAuth-Client-Id", secondUser.clientId)
-      .set("Authorization", `Bearer ${secondUser.accessToken}`);
+    const secondResponse = await authenticatedRequest(
+      secondUser.accessToken,
+      secondUser.clientId,
+      secondUser.clientSecret,
+    ).get("/api/v1/security/events");
 
     expect(firstResponse.status).toBe(200);
     expect(secondResponse.status).toBe(200);

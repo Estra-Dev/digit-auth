@@ -17,3 +17,4 @@ export {
 } from "./service/application.service.js";
 
 export { requireApplication } from "./middleware/require-application.middleware.js";
+export { requirePublishableApplication } from "./middleware/require-publishable-application.middleware.js";

@@ -52,12 +52,14 @@ export class ApplicationRepository {
     workspaceId: string;
     name: string;
     clientId: string;
+    publishableKey: string;
     clientSecretHash: string;
   }): Promise<ApplicationDocument> {
     return Application.create({
       workspaceId: data.workspaceId,
       name: data.name,
       clientId: data.clientId,
+      publishableKey: data.publishableKey,
       clientSecretHash: data.clientSecretHash,
     });
   }
@@ -90,6 +92,15 @@ export class ApplicationRepository {
       { clientSecretHash },
       { new: true, runValidators: true },
     ).select("+clientSecretHash");
+  }
+
+  async findActiveByPublishableKey(
+    publishableKey: string,
+  ): Promise<ApplicationDocument | null> {
+    return Application.findOne({
+      publishableKey,
+      status: ApplicationStatus.ACTIVE,
+    });
   }
 }
 

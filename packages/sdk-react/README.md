@@ -25,8 +25,11 @@ import { AuthProvider } from "@digit-auth/react";
 
 export default function App() {
   return (
-    <AuthProvider apiUrl="https://your-digit-auth-api.example.com/api/v1">
-      <Application />
+    <AuthProvider
+      apiUrl="https://your-digit-auth-api.example.com/api/v1"
+      publishableKey="dap_your_publishable_key"
+    >
+      <App />
     </AuthProvider>
   );
 }

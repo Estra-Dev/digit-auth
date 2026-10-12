@@ -24,6 +24,7 @@ export function isApiError(error: unknown): error is ApiError {
 
 export type ApiClientOptions = {
   baseUrl?: string;
+  publishableKey: string;
 };
 
 type TokenResponse = {
@@ -63,9 +64,15 @@ function isTokenResponse(data: unknown): data is TokenResponse {
 export class ApiClient {
   private readonly baseUrl: string;
   private refreshPromise: Promise<boolean> | null = null;
+  private readonly publishableKey: string;
 
-  constructor(options: ApiClientOptions = {}) {
+  constructor(options: ApiClientOptions) {
+    if (!options.publishableKey.trim()) {
+      throw new Error("DigitAuth publishableKey is required.");
+    }
+
     this.baseUrl = normalizeBaseUrl(options.baseUrl ?? DEFAULT_API_URL);
+    this.publishableKey = options.publishableKey;
   }
 
   private buildUrl(endpoint: string): string {
@@ -80,6 +87,7 @@ export class ApiClient {
     const accessToken = tokenStorage.getAccessToken();
 
     const headers = new Headers(options.headers);
+    headers.set("X-DigitAuth-Publishable-Key", this.publishableKey);
 
     if (options.body !== undefined && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
@@ -161,10 +169,11 @@ export class ApiClient {
     }
 
     try {
-      const response = await fetch(this.buildUrl("/auth/refresh"), {
+      const response = await fetch(this.buildUrl("/browser/auth/refresh"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-DigitAuth-Publishable-Key": this.publishableKey,
         },
         credentials: "include",
         body: JSON.stringify({ refreshToken }),
@@ -247,8 +256,6 @@ export class ApiClient {
   }
 }
 
-export function createApiClient(options?: ApiClientOptions): ApiClient {
+export function createApiClient(options: ApiClientOptions): ApiClient {
   return new ApiClient(options);
 }
-
-export const apiClient = createApiClient();

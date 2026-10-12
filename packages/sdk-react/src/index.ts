@@ -3,7 +3,6 @@ export { AuthProvider, useAuth } from "./lib/auth/auth-context";
 export {
   ApiClient,
   ApiError,
-  apiClient,
   createApiClient,
   isApiError,
 } from "./lib/api-client";

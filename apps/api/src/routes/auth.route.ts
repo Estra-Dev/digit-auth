@@ -43,7 +43,12 @@ const authRouter = Router();
  * Public application-scoped authentication routes
  */
 
-authRouter.post("/register", requireApplication, registerRateLimit, register);
+authRouter.post(
+  "/register",
+  requireApplication,
+  registerRateLimit,
+  register,
+);
 
 authRouter.post(
   "/login",
@@ -61,7 +66,12 @@ authRouter.post(
   refreshToken,
 );
 
-authRouter.post("/logout", requireApplication, validate(logoutSchema), logout);
+authRouter.post(
+  "/logout",
+  requireApplication,
+  validate(logoutSchema),
+  logout,
+);
 
 authRouter.post(
   "/logout-all",
@@ -107,7 +117,12 @@ authRouter.get(
   getCurrentUser,
 );
 
-authRouter.get("/sessions", requireApplication, requireAuth, getMySessions);
+authRouter.get(
+  "/sessions",
+  requireApplication,
+  requireAuth,
+  getMySessions,
+);
 
 authRouter.delete(
   "/sessions/:id",

@@ -63,16 +63,25 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export type AuthProviderProps = {
   children: ReactNode;
   apiUrl?: string;
+  publishableKey: string;
 };
 
 function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
 
-export function AuthProvider({ children, apiUrl }: AuthProviderProps) {
+export function AuthProvider({
+  children,
+  apiUrl,
+  publishableKey,
+}: AuthProviderProps) {
   const apiClient = useMemo(
-    () => createApiClient(apiUrl !== undefined ? { baseUrl: apiUrl } : {}),
-    [apiUrl],
+    () =>
+      createApiClient({
+        ...(apiUrl !== undefined ? { baseUrl: apiUrl } : {}),
+        publishableKey,
+      }),
+    [apiUrl, publishableKey],
   );
 
   const authService = useMemo(() => createAuthService(apiClient), [apiClient]);

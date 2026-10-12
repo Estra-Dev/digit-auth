@@ -13,6 +13,10 @@ function generateClientSecret(): string {
   return `das_${crypto.randomBytes(32).toString("hex")}`;
 }
 
+function generatePublishableKey(): string {
+  return `dap_${crypto.randomBytes(24).toString("hex")}`;
+}
+
 function mapApplication(application: {
   id: string;
   name: string;
@@ -35,6 +39,7 @@ export class ApplicationService {
   async createApplication(workspaceId: string, name: string) {
     const clientId = generateClientId();
     const clientSecret = generateClientSecret();
+    const publishableKey = generatePublishableKey();
 
     const clientSecretHash = await passwordService.hash(clientSecret);
 
@@ -43,6 +48,7 @@ export class ApplicationService {
       name,
       clientId,
       clientSecretHash,
+      publishableKey,
     });
 
     return {
@@ -51,7 +57,19 @@ export class ApplicationService {
         clientId,
         clientSecret,
       },
+      publishableKey,
     };
+  }
+
+  async getActiveApplicationByPublishableKey(publishableKey: string) {
+    const application =
+      await applicationRepository.findActiveByPublishableKey(publishableKey);
+
+    if (!application) {
+      throw new AppError("Invalid or inactive application.", 401, true);
+    }
+
+    return application;
   }
 
   async listApplications(workspaceId: string) {

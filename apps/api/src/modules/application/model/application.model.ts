@@ -23,6 +23,14 @@ const applicationSchema = new Schema(
       trim: true,
     },
 
+    publishableKey: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+      trim: true,
+    },
+
     clientSecretHash: {
       type: String,
       required: true,
