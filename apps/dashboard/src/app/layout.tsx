@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@digit-auth/react";
+// import { AuthProvider } from "@digit-auth/react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,13 +25,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <AuthProvider
+        {/* <AuthProvider
           apiUrl={
             process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api/v1"
           }
+          publishableKey={process.env.NEXT_PUBLIC_DIGIT_AUTH_PUBLISHABLE_KEY!}
         >
-          {children}
-        </AuthProvider>
+        </AuthProvider> */}
+        {children}
       </body>
     </html>
   );

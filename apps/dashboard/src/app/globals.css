@@ -24,3 +24,500 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* =========================================
+   DigitAuth public site themes
+   ========================================= */
+
+:root {
+  color-scheme: dark;
+  --site-bg: #080d19;
+  --site-surface: #0d1424;
+  --site-panel: rgb(255 255 255 / 3%);
+  --site-text: #f8fafc;
+  --site-muted: #94a3b8;
+  --site-border: rgb(148 163 184 / 16%);
+  --site-header-bg: rgb(8 13 25 / 90%);
+}
+
+html.theme-light {
+  color-scheme: light;
+  --site-bg: #f6f9ff;
+  --site-surface: #ffffff;
+  --site-panel: rgb(226 232 240 / 35%);
+  --site-text: #0f172a;
+  --site-muted: #52627a;
+  --site-border: rgb(100 116 139 / 22%);
+  --site-header-bg: rgb(255 255 255 / 90%);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 90px;
+}
+
+body {
+  background: var(--site-bg);
+  color: var(--site-text);
+}
+
+.site-home {
+  min-height: 100vh;
+  background: var(--site-bg);
+  color: var(--site-text);
+  transition:
+    background-color 250ms ease,
+    color 250ms ease;
+}
+
+.site-header {
+  background: var(--site-header-bg);
+  border-color: var(--site-border);
+  color: var(--site-text);
+}
+
+.site-nav-link {
+  color: var(--site-muted);
+}
+
+.site-nav-link:hover {
+  color: var(--site-text);
+}
+
+.theme-toggle {
+  color: var(--site-text);
+  border-color: var(--site-border);
+  background: var(--site-surface);
+}
+
+html.theme-light .theme-icon-moon {
+  display: none;
+}
+
+html:not(.theme-light) .theme-icon-sun {
+  display: none;
+}
+
+.site-mobile-menu {
+  background: var(--site-bg);
+  border-color: var(--site-border);
+}
+
+.hero-glow {
+  background: rgb(37 99 235 / 14%);
+}
+
+.hero-badge {
+  color: #60a5fa;
+  border-color: rgb(59 130 246 / 25%);
+  background: rgb(59 130 246 / 7%);
+}
+
+.hero-description,
+.hero-muted,
+.section-description,
+.dashboard-muted {
+  color: var(--site-muted);
+}
+
+.secondary-button {
+  color: var(--site-text);
+  border-color: var(--site-border);
+}
+
+.secondary-button:hover {
+  background: var(--site-panel);
+  border-color: rgb(59 130 246 / 50%);
+}
+
+.features-section {
+  background: var(--site-panel);
+  border-color: var(--site-border);
+}
+
+.section-eyebrow {
+  color: #3b82f6;
+}
+
+.feature-card {
+  background: var(--site-surface);
+  border-color: var(--site-border);
+  transition:
+    transform 250ms ease,
+    border-color 250ms ease,
+    box-shadow 250ms ease,
+    background-color 250ms ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-6px);
+  border-color: rgb(59 130 246 / 55%);
+  box-shadow: 0 12px 36px rgb(37 99 235 / 10%);
+}
+
+.developer-cta {
+  background: linear-gradient(135deg, rgb(59 130 246 / 10%), transparent);
+  border-color: rgb(59 130 246 / 25%);
+}
+
+.cta-glow {
+  background: rgb(37 99 235 / 12%);
+}
+
+.site-footer {
+  border-color: var(--site-border);
+  color: var(--site-text);
+}
+
+/* =========================================
+   Dashboard preview
+   ========================================= */
+
+.motion-dashboard {
+  isolation: isolate;
+  animation: digit-float 6s ease-in-out infinite;
+}
+
+.dashboard-card {
+  color: var(--site-text);
+  background: var(--site-surface);
+  border-color: var(--site-border);
+  border-bottom-color: var(--site-border);
+  box-shadow: 0 24px 70px rgb(0 0 0 / 12%);
+}
+
+.dashboard-card > div:first-child {
+  border-color: var(--site-border);
+}
+
+.dashboard-panel {
+  background: var(--site-panel);
+  border-color: var(--site-border);
+}
+
+/* =========================================
+   Orbiting particles
+   ========================================= */
+
+.dashboard-orbits {
+  position: absolute;
+  z-index: -1;
+  inset: -9%;
+  pointer-events: none;
+}
+
+.orbit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 112%;
+  height: 58%;
+  border: 1px solid rgb(59 130 246 / 25%);
+  border-radius: 50%;
+}
+
+.orbit-one {
+  animation: orbit-rotate-one 18s linear infinite;
+}
+
+.orbit-two {
+  width: 120%;
+  height: 72%;
+  border-color: rgb(34 211 238 / 20%);
+  animation: orbit-rotate-two 23s linear infinite;
+}
+
+.orbit-three {
+  width: 104%;
+  height: 86%;
+  border-color: rgb(129 140 248 / 18%);
+  animation: orbit-rotate-three 28s linear infinite;
+}
+
+.orbit-particle {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #60a5fa;
+  box-shadow:
+    0 0 9px #3b82f6,
+    0 0 22px rgb(59 130 246 / 70%);
+}
+
+.particle-two {
+  width: 7px;
+  height: 7px;
+  background: #67e8f9;
+  box-shadow: 0 0 18px rgb(34 211 238 / 80%);
+}
+
+.particle-three {
+  width: 6px;
+  height: 6px;
+  background: #a5b4fc;
+  box-shadow: 0 0 18px rgb(129 140 248 / 80%);
+}
+
+.orbit-spark {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 15px 4px rgb(56 189 248 / 35%);
+  animation: spark-pulse 2.4s ease-in-out infinite alternate;
+}
+
+.spark-one {
+  top: 16%;
+  left: 13%;
+}
+
+.spark-two {
+  top: 68%;
+  right: 2%;
+  animation-delay: 800ms;
+}
+
+.spark-three {
+  bottom: 3%;
+  left: 32%;
+  animation-delay: 1400ms;
+}
+
+/* =========================================
+   Activity notifications
+   ========================================= */
+
+.activity-toast {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: 260px;
+  padding: 12px 14px;
+  border: 1px solid rgb(96 165 250 / 35%);
+  border-radius: 14px;
+  background: rgb(10 20 42 / 94%);
+  backdrop-filter: blur(14px);
+  opacity: 0;
+  pointer-events: none;
+  animation: digit-toast 8s ease-in-out infinite;
+}
+
+.activity-title {
+  color: #f8fafc;
+}
+
+.activity-icon {
+  display: flex;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgb(37 99 235 / 20%);
+  color: #60a5fa;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.activity-status {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 10px rgb(52 211 153 / 60%);
+}
+
+.activity-toast-one {
+  top: -18px;
+  left: -28px;
+  animation-delay: 0s;
+}
+
+.activity-toast-two {
+  bottom: 24%;
+  left: -42px;
+  animation-delay: 2.6s;
+}
+
+.activity-toast-three {
+  right: -20px;
+  bottom: 3%;
+  animation-delay: 5.2s;
+}
+
+/* =========================================
+   Keyframes
+   ========================================= */
+
+@keyframes digit-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes digit-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes digit-toast {
+  0%,
+  12% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+
+  22%,
+  78% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  90%,
+  100% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+}
+
+@keyframes orbit-rotate-one {
+  from {
+    transform: translate(-50%, -50%) rotate(-24deg);
+  }
+
+  to {
+    transform: translate(-50%, -50%) rotate(336deg);
+  }
+}
+
+@keyframes orbit-rotate-two {
+  from {
+    transform: translate(-50%, -50%) rotate(40deg);
+  }
+
+  to {
+    transform: translate(-50%, -50%) rotate(-320deg);
+  }
+}
+
+@keyframes orbit-rotate-three {
+  from {
+    transform: translate(-50%, -50%) rotate(72deg);
+  }
+
+  to {
+    transform: translate(-50%, -50%) rotate(432deg);
+  }
+}
+
+@keyframes spark-pulse {
+  from {
+    opacity: 0.35;
+    scale: 0.8;
+  }
+
+  to {
+    opacity: 1;
+    scale: 1.35;
+  }
+}
+
+/* =========================================
+   Responsive layouts
+   ========================================= */
+
+@media (max-width: 640px) {
+  .motion-dashboard {
+    animation-duration: 8s;
+  }
+
+  .dashboard-orbits {
+    inset: -3%;
+    opacity: 0.6;
+  }
+
+  .orbit {
+    width: 106%;
+  }
+
+  .orbit-two {
+    width: 110%;
+  }
+
+  .orbit-three {
+    width: 100%;
+  }
+
+  .activity-toast {
+    max-width: 220px;
+    padding: 9px 11px;
+  }
+
+  .activity-toast-one {
+    top: -14px;
+    left: -4px;
+  }
+
+  .activity-toast-two {
+    bottom: 22%;
+    left: -4px;
+  }
+
+  .activity-toast-three {
+    right: -4px;
+    bottom: -12px;
+  }
+}
+
+/* =========================================
+   Reduced-motion accessibility
+   ========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .motion-hero > *,
+  .motion-dashboard,
+  .motion-card,
+  .feature-card,
+  .activity-toast,
+  .dashboard-orbits *,
+  .orbit,
+  .orbit-spark {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+
+  .feature-card,
+  body,
+  .site-home {
+    transition: none;
+  }
+}

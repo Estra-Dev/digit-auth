@@ -22,6 +22,7 @@ import type {
 } from "../../types/auth";
 
 type AuthContextValue = {
+  apiClient: ReturnType<typeof createApiClient>;
   user: AuthenticatedUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -337,6 +338,7 @@ export function AuthProvider({
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
+      apiClient,
       isLoading,
       isAuthenticated: user !== null,
       authError,
@@ -360,6 +362,7 @@ export function AuthProvider({
       resetPassword,
     }),
     [
+      apiClient,
       user,
       isLoading,
       authError,

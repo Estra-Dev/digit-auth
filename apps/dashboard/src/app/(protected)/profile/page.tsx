@@ -2,8 +2,7 @@
 
 import { FormEvent, useState } from "react";
 
-import { ApiError, apiClient } from "@digit-auth/react";
-import { useAuth } from "@digit-auth/react";
+import { ApiError, useAuth } from "@digit-auth/react";
 
 type UpdateProfileResponse = {
   id: string;
@@ -14,7 +13,7 @@ type UpdateProfileResponse = {
 };
 
 export default function ProfilePage() {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, apiClient } = useAuth();
 
   const [firstName, setFirstName] = useState(user?.firstName ?? "");
   const [lastName, setLastName] = useState(user?.lastName ?? "");
