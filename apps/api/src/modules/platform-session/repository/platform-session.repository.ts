@@ -69,7 +69,7 @@ export class PlatformSessionRepository {
         },
       },
       {
-        new: true,
+        returnDocument: "after",
         runValidators: true,
       },
     );
@@ -86,7 +86,7 @@ export class PlatformSessionRepository {
         },
       },
       {
-        new: true,
+        returnDocument: "after",
       },
     );
   }
