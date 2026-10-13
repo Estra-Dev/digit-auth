@@ -1,54 +1,16 @@
 import { type ZodType } from "zod";
-import {
-  type Request,
-  type Response,
-  type NextFunction,
-  type RequestHandler,
-} from "express";
+import type { RequestHandler } from "express";
 import { ApiResponse } from "../core/response/ApiResponse.js";
-
-// export function validate<T>(schema: ZodType<T>): RequestHandler {
-//   return (req: Request, res: Response, next: NextFunction) => {
-//     const result = schema.safeParse({
-//       body: req.body,
-//       params: req.params,
-//       query: req.query,
-//     });
-
-//     if (!result.success) {
-//       return ApiResponse.error(res, {
-//         statusCode: 400,
-//         message: "Validation Failed",
-//         errors: result.error.flatten(),
-//       });
-//     }
-
-//     req.body = (result.data as { body: unknown }).body;
-
-//     return next();
-//   };
-// }
 
 export function validate<T>(schema: ZodType<T>): RequestHandler {
   return (req, res, next) => {
-    const payload = {
+    const result = schema.safeParse({
       body: req.body,
       params: req.params,
       query: req.query,
-    };
-
-    console.log("PAYLOAD TO ZOD:");
-    console.dir(payload, { depth: null });
-
-    const result = schema.safeParse(payload);
-
-    console.log("RESULT");
-    console.dir(result, { depth: null });
+    });
 
     if (!result.success) {
-      console.log("VALIDATION ERROR:");
-      console.dir(result.error.flatten(), { depth: null });
-
       ApiResponse.error(res, {
         statusCode: 400,
         message: "Validation Failed",
@@ -58,44 +20,8 @@ export function validate<T>(schema: ZodType<T>): RequestHandler {
       return;
     }
 
-    console.log("PARSED:");
-    console.dir(result.data, { depth: null });
-
     req.body = (result.data as { body: unknown }).body;
 
     next();
   };
 }
-// import type { ZodType } from "zod";
-
-// import type { Request, Response, NextFunction, RequestHandler } from "express";
-
-// import { ApiResponse } from "../core/response/ApiResponse.js";
-
-// export function validate<T>(schema: ZodType<T>): RequestHandler {
-//   return (req: Request, res: Response, next: NextFunction): void => {
-//     const result = schema.safeParse({
-//       body: req.body,
-//       params: req.params,
-//       query: req.query,
-//     });
-
-//     if (!result.success) {
-//       ApiResponse.error(res, {
-//         statusCode: 400,
-//         message: "Validation Failed",
-//         errors: result.error.flatten(),
-//       });
-
-//       return;
-//     }
-
-//     req.body = (
-//       result.data as {
-//         body: unknown;
-//       }
-//     ).body;
-
-//     next();
-//   };
-// }

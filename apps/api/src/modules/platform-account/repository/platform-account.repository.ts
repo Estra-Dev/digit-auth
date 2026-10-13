@@ -57,9 +57,7 @@ export class PlatformAccountRepository {
           failedLoginAttempts: 1,
         },
       },
-      {
-        new: true,
-      },
+      { returnDocument: "after", runValidators: true },
     );
   }
 
@@ -74,9 +72,7 @@ export class PlatformAccountRepository {
           lockedUntil: null,
         },
       },
-      {
-        new: true,
-      },
+      { returnDocument: "after", runValidators: true },
     );
   }
 
@@ -91,9 +87,7 @@ export class PlatformAccountRepository {
           lockedUntil,
         },
       },
-      {
-        new: true,
-      },
+      { returnDocument: "after", runValidators: true },
     );
   }
 
@@ -108,9 +102,7 @@ export class PlatformAccountRepository {
           emailVerified: true,
         },
       },
-      {
-        new: true,
-      },
+      { returnDocument: "after", runValidators: true },
     );
   }
 
@@ -120,7 +112,7 @@ export class PlatformAccountRepository {
     session?: ClientSession,
   ): Promise<PlatformAccountDocument | null> {
     const options = {
-      new: true,
+      returnDocument: "after" as const,
       runValidators: true,
       ...(session ? { session } : {}),
     };

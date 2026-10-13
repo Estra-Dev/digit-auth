@@ -36,12 +36,6 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const applicationId = getApplicationId(req);
 
-  console.log({
-    userAgent: req.get("user-agent"),
-    ip: req.ip,
-    forwardedFor: req.headers["x-forwarded-for"],
-  });
-
   const result = await authService.login(applicationId, req.body, {
     userAgent: req.get("user-agent") ?? null,
     ipAddress: req.ip ?? null,

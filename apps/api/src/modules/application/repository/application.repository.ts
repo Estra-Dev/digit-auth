@@ -75,7 +75,7 @@ export class ApplicationRepository {
         workspaceId,
       },
       { status },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     );
   }
 
@@ -90,7 +90,7 @@ export class ApplicationRepository {
         workspaceId,
       },
       { clientSecretHash },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     ).select("+clientSecretHash");
   }
 

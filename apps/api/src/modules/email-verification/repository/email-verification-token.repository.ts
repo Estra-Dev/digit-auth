@@ -35,9 +35,7 @@ export class EmailVerificationTokenRepository {
           usedAt: new Date(),
         },
       },
-      {
-        new: true,
-      },
+      { returnDocument: "after", runValidators: true },
     );
   }
 

@@ -26,10 +26,7 @@ export class ProfileRepository {
       {
         $set: data,
       },
-      {
-        new: true,
-        runValidators: true,
-      },
+      { returnDocument: "after", runValidators: true },
     );
   }
 
@@ -48,10 +45,7 @@ export class ProfileRepository {
           passwordHashed,
         },
       },
-      {
-        new: true,
-        runValidators: true,
-      },
+      { returnDocument: "after", runValidators: true },
     );
   }
 

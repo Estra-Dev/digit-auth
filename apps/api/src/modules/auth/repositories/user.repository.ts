@@ -195,10 +195,7 @@ export class UserRepository {
       {
         $set: data,
       },
-      {
-        new: true,
-        runValidators: true,
-      },
+      { returnDocument: "after", runValidators: true },
     );
   }
 
@@ -227,10 +224,7 @@ export class UserRepository {
       {
         $set: data,
       },
-      {
-        new: true,
-        runValidators: true,
-      },
+      { returnDocument: "after", runValidators: true },
     );
   }
 
@@ -257,10 +251,7 @@ export class UserRepository {
       {
         $set: data,
       },
-      {
-        new: true,
-        runValidators: true,
-      },
+      { returnDocument: "after", runValidators: true },
     );
   }
 
