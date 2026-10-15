@@ -58,7 +58,7 @@ describe("POST /api/v1/platform/auth/verify-email", () => {
 
     expect(sentEmail.to).toBe(email);
 
-    expect(sentEmail.subject).toBe("Verify your DigitAuth email");
+    expect(sentEmail.subject).toBe("Verify your DigitAuth email address");
 
     const verificationToken = extractVerificationToken(sentEmail.html);
 
@@ -178,5 +178,46 @@ describe("POST /api/v1/platform/auth/verify-email", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.success).toBe(false);
+  });
+
+  it("should handle concurrent verification requests", async () => {
+    const email = `platform-concurrent-${Date.now()}@example.com`;
+
+    const registerResponse = await request(app)
+      .post("/api/v1/platform/auth/register")
+      .send({
+        email,
+        password: "TestPassword123!",
+      });
+
+    expect(registerResponse.status).toBe(201);
+
+    const sentEmail = testEmailProvider.sentEmails.at(0);
+
+    expect(sentEmail).toBeDefined();
+
+    if (!sentEmail) {
+      throw new Error("Verification email was not sent.");
+    }
+
+    const verificationToken = extractVerificationToken(sentEmail.html);
+
+    const responses = await Promise.all([
+      request(app)
+        .post("/api/v1/platform/auth/verify-email")
+        .send({ token: verificationToken }),
+      request(app)
+        .post("/api/v1/platform/auth/verify-email")
+        .send({ token: verificationToken }),
+    ]);
+
+    const account = await platformAccountRepository.findByEmail(email);
+
+    expect(account).not.toBeNull();
+    expect(account!.emailVerified).toBe(true);
+
+    // Concurrent requests that both reach token validation before
+    // consumption should both complete successfully.
+    expect(responses.every((response) => response.status === 200)).toBe(true);
   });
 });

@@ -1,22 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { verifyPlatformEmail } from "@/lib/platform-auth/platform-auth";
 
 type VerificationState =
-  | {
-      status: "loading";
-    }
-  | {
-      status: "success";
-    }
-  | {
-      status: "error";
-      message: string;
-    };
+  | { status: "loading" }
+  | { status: "success" }
+  | { status: "error"; message: string };
 
 function getInitialState(token: string | null): VerificationState {
   if (!token) {
@@ -26,46 +19,61 @@ function getInitialState(token: string | null): VerificationState {
     };
   }
 
-  return {
-    status: "loading",
-  };
+  return { status: "loading" };
 }
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
-
   const hasToken = typeof token === "string" && token.length > 0;
 
   const [state, setState] = useState<VerificationState>(() =>
     getInitialState(token),
   );
 
+  // Prevent the same token from being submitted more than once
+  // by this mounted component.
+  const verificationStartedFor = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!hasToken || token === null) {
+    if (!token) {
       return;
     }
 
-    const verifyToken = async (verificationToken: string) => {
+    if (verificationStartedFor.current === token) {
+      return;
+    }
+
+    const verificationToken = token;
+
+    verificationStartedFor.current = verificationToken;
+    setState({ status: "loading" });
+
+    async function verifyToken() {
       try {
         await verifyPlatformEmail(verificationToken);
 
-        setState({
-          status: "success",
-        });
+        setState({ status: "success" });
       } catch (error) {
-        setState({
-          status: "error",
-          message:
-            error instanceof Error
-              ? error.message
-              : "Unable to verify your email.",
+        setState((currentState) => {
+          if (currentState.status === "success") {
+            return currentState;
+          }
+
+          return {
+            status: "error",
+            message:
+              error instanceof Error
+                ? error.message
+                : "Unable to verify your email.",
+          };
         });
       }
-    };
+    }
 
-    void verifyToken(token);
+    void verifyToken();
   }, [token, hasToken]);
+
   return (
     <div className="w-full max-w-md">
       <div className="mb-8 text-center">
@@ -102,6 +110,7 @@ function VerifyEmailContent() {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -138,6 +147,7 @@ function VerifyEmailContent() {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"

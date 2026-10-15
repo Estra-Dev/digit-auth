@@ -65,7 +65,7 @@ describe("POST /api/v1/platform/auth/resend-verification-email", () => {
     }
 
     expect(secondEmail.to).toBe(email);
-    expect(secondEmail.subject).toBe("Verify your DigitAuth email");
+    expect(secondEmail.subject).toBe("Verify your DigitAuth email address");
 
     const activeTokens = await EmailVerificationToken.find({
       accountId: account!._id,
