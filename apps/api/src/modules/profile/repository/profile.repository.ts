@@ -1,5 +1,6 @@
-import { Types } from "mongoose";
+import { Types, type ClientSession } from "mongoose";
 
+import { withSession } from "../../../shared/utils/mongoose.js";
 import { User } from "../../auth/model/user.model.js";
 
 export class ProfileRepository {
@@ -49,11 +50,18 @@ export class ProfileRepository {
     );
   }
 
-  async deleteById(applicationId: Types.ObjectId, userId: string) {
-    return User.findOneAndDelete({
-      _id: userId,
-      applicationId,
-    });
+  async deleteById(
+    applicationId: Types.ObjectId,
+    userId: Types.ObjectId,
+    session?: ClientSession,
+  ) {
+    return User.findOneAndDelete(
+      {
+        _id: userId,
+        applicationId,
+      },
+      withSession(session),
+    );
   }
 }
 

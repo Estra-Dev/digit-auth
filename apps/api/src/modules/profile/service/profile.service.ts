@@ -1,8 +1,11 @@
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 
 import { AppError } from "../../../core/errors/AppError.js";
 
 import { UserMapper } from "../../auth/mapper/user.mapper.js";
+import { passwordResetTokenRepository } from "../../auth/repositories/password-reset-token.repository.js";
+import { sessionRepository } from "../../auth/repositories/session.repository.js";
+import { verificationTokenRepository } from "../../auth/repositories/verification-token.repository.js";
 
 import { profileRepository } from "../repository/profile.repository.js";
 
@@ -74,10 +77,53 @@ class ProfileService {
   }
 
   async deleteAccount(applicationId: Types.ObjectId, userId: string) {
-    const user = await profileRepository.deleteById(applicationId, userId);
-
-    if (!user) {
+    if (!Types.ObjectId.isValid(userId)) {
       throw new AppError("User not found", 404, true);
+    }
+
+    const userObjectId = new Types.ObjectId(userId);
+    const session = await mongoose.startSession();
+
+    try {
+      session.startTransaction();
+
+      const user = await profileRepository.deleteById(
+        applicationId,
+        userObjectId,
+        session,
+      );
+
+      if (!user) {
+        throw new AppError("User not found", 404, true);
+      }
+
+      await sessionRepository.deleteByUserId(
+        applicationId,
+        userObjectId,
+        session,
+      );
+
+      await verificationTokenRepository.deleteByUserId(
+        applicationId,
+        userObjectId,
+        session,
+      );
+
+      await passwordResetTokenRepository.deleteByUserId(
+        applicationId,
+        userObjectId,
+        session,
+      );
+
+      await session.commitTransaction();
+    } catch (error) {
+      if (session.inTransaction()) {
+        await session.abortTransaction();
+      }
+
+      throw error;
+    } finally {
+      await session.endSession();
     }
   }
 }
