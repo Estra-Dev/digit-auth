@@ -2,37 +2,25 @@
 
 import { useId, useRef, useState, type FormEvent } from "react";
 import { useAuth } from "../lib/auth/auth-context";
+import {
+  AuthBrand,
+  AuthFrame,
+  AuthTrustFooter,
+  authInputStyle,
+  authLabelStyle,
+} from "./AuthPrimitives";
 
 export type SignInProps = {
   signUpUrl?: string;
+  resetPasswordUrl?: string;
   redirectUrl?: string;
   onSuccess?: () => void;
   className?: string;
 };
 
-const inputStyle = {
-  width: "100%",
-  boxSizing: "border-box" as const,
-  padding: "12px 14px",
-  border: "1px solid #cbd5e1",
-  borderRadius: "10px",
-  fontSize: "14px",
-  lineHeight: 1.5,
-  color: "#0f172a",
-  background: "#ffffff",
-  outlineOffset: "2px",
-};
-
-const labelStyle = {
-  display: "block",
-  marginBottom: "7px",
-  color: "#334155",
-  fontSize: "13px",
-  fontWeight: 600,
-};
-
 export function SignIn({
   signUpUrl = "/sign-up",
+  resetPasswordUrl = "/reset-password",
   redirectUrl = "/",
   onSuccess,
   className,
@@ -50,9 +38,7 @@ export function SignIn({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (submittingRef.current) {
-      return;
-    }
+    if (submittingRef.current) return;
 
     submittingRef.current = true;
     setError("");
@@ -84,64 +70,23 @@ export function SignIn({
   }
 
   return (
-    <section
-      className={className}
-      style={{
-        width: "100%",
-        maxWidth: "420px",
-        margin: "0 auto",
-        padding: "32px",
-        boxSizing: "border-box",
-        background: "#ffffff",
-        color: "#0f172a",
-        border: "1px solid #e2e8f0",
-        borderRadius: "16px",
-        boxShadow: "0 12px 35px rgba(15, 23, 42, 0.06)",
-        fontFamily:
-          'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      }}
-    >
-      <div style={{ marginBottom: "26px" }}>
-        <div
-          style={{
-            color: "#1e3a8a",
-            fontWeight: 800,
-            fontSize: "12px",
-            letterSpacing: "1.5px",
-          }}
-        >
-          DIGIT AUTH
-        </div>
+    <AuthFrame className={className}>
+      <AuthBrand />
 
-        <h2
-          style={{
-            margin: "12px 0 8px",
-            fontSize: "27px",
-            lineHeight: 1.25,
-            letterSpacing: "-0.7px",
-          }}
-        >
-          Welcome back
+      <header className="da-auth__header">
+        <h2 className="da-auth__heading">
+          Welcome back<span aria-hidden="true">.</span>
         </h2>
-
-        <p
-          style={{
-            color: "#64748b",
-            margin: 0,
-            fontSize: "14px",
-            lineHeight: 1.6,
-          }}
-        >
+        <p className="da-auth__description">
           Sign in to continue to your account.
         </p>
-      </div>
+      </header>
 
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "18px" }}>
-          <label htmlFor={`${id}-email`} style={labelStyle}>
+        <div className="da-auth__field">
+          <label htmlFor={`${id}-email`} style={authLabelStyle}>
             Email address
           </label>
-
           <input
             id={`${id}-email`}
             name="email"
@@ -153,14 +98,22 @@ export function SignIn({
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="you@example.com"
-            style={inputStyle}
+            style={authInputStyle}
           />
         </div>
 
-        <div>
-          <label htmlFor={`${id}-password`} style={labelStyle}>
-            Password
-          </label>
+        <div className="da-auth__field">
+          <div className="da-auth__meta" style={{ marginBottom: 8 }}>
+            <label
+              htmlFor={`${id}-password`}
+              style={{ ...authLabelStyle, margin: 0 }}
+            >
+              Password
+            </label>
+            <a href={resetPasswordUrl} style={{ fontSize: 12 }}>
+              Forgot password?
+            </a>
+          </div>
 
           <input
             id={`${id}-password`}
@@ -171,22 +124,11 @@ export function SignIn({
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="Enter your password"
-            style={inputStyle}
+            style={authInputStyle}
           />
         </div>
 
-        <label
-          htmlFor={`${id}-show-password`}
-          style={{
-            display: "inline-flex",
-            gap: "8px",
-            alignItems: "center",
-            margin: "13px 0 20px",
-            fontSize: "13px",
-            color: "#475569",
-            cursor: "pointer",
-          }}
-        >
+        <label className="da-auth__check" htmlFor={`${id}-show-password`}>
           <input
             id={`${id}-show-password`}
             type="checkbox"
@@ -198,97 +140,32 @@ export function SignIn({
 
         {error && (
           <p
+            className="da-auth__error"
             id={`${id}-error`}
             role="alert"
             aria-live="polite"
-            style={{
-              margin: "0 0 16px",
-              padding: "11px 12px",
-              color: "#b91c1c",
-              background: "#fef2f2",
-              border: "1px solid #fecaca",
-              borderRadius: "9px",
-              fontSize: "13px",
-              lineHeight: 1.5,
-            }}
+            style={{ marginTop: 18 }}
           >
             {error}
           </p>
         )}
 
         <button
+          className="da-auth__primary"
           type="submit"
           disabled={loading}
           aria-busy={loading}
-          style={{
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "9px",
-            padding: "13px 16px",
-            border: "1px solid #172554",
-            borderRadius: "10px",
-            background: loading ? "#475569" : "#172554",
-            color: "#ffffff",
-            fontSize: "14px",
-            fontWeight: 700,
-            cursor: loading ? "not-allowed" : "pointer",
-            opacity: loading ? 0.8 : 1,
-            transition: "background 150ms ease, opacity 150ms ease",
-          }}
         >
-          {loading && (
-            <span
-              aria-hidden="true"
-              style={{
-                width: "14px",
-                height: "14px",
-                border: "2px solid rgba(255,255,255,0.4)",
-                borderTopColor: "#ffffff",
-                borderRadius: "50%",
-                animation: "digitAuthSignInSpin 700ms linear infinite",
-              }}
-            />
-          )}
-          {loading ? "Signing in..." : "Sign in"}
+          {loading && <span className="da-auth__spinner" aria-hidden="true" />}
+          {loading ? "Signing you in..." : "Sign in to your account"}
         </button>
-
-        <style>{`
-          @keyframes digitAuthSignInSpin {
-            to { transform: rotate(360deg); }
-          }
-
-          @media (prefers-reduced-motion: reduce) {
-            button, span {
-              animation: none !important;
-              transition: none !important;
-            }
-          }
-        `}</style>
       </form>
 
-      <p
-        style={{
-          textAlign: "center",
-          margin: "22px 0 0",
-          fontSize: "13px",
-          lineHeight: 1.7,
-          color: "#64748b",
-        }}
-      >
-        Don't have an account?{" "}
-        <a
-          href={signUpUrl}
-          style={{
-            color: "#1e3a8a",
-            fontWeight: 700,
-            textDecoration: "none",
-          }}
-        >
-          Create account
-        </a>
+      <p className="da-auth__switch">
+        New to this application? <a href={signUpUrl}>Create an account</a>
       </p>
-    </section>
+
+      <AuthTrustFooter />
+    </AuthFrame>
   );
 }
