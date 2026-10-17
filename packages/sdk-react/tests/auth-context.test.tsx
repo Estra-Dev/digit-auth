@@ -1,3 +1,5 @@
+import { StrictMode } from "react";
+
 import {
   act,
   cleanup,
@@ -228,5 +230,94 @@ describe("AuthProvider", () => {
     expect(() => renderHook(() => useAuth())).toThrow(
       "useAuth must be used inside an AuthProvider",
     );
+  });
+
+  it("automatically verifies an email token and removes it from the URL", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?token=valid-token&next=%2Faccount#continue",
+    );
+
+    mockFetch.mockResolvedValueOnce(jsonResponse(null));
+
+    render(
+      <AuthProvider
+        apiUrl="http://localhost:5000/api/v1"
+        publishableKey="pk_test_example"
+      >
+        <div>Application content</div>
+      </AuthProvider>,
+    );
+
+    expect(
+      await waitFor(() => {
+        expect(document.body.textContent).toContain("Email verified");
+        return true;
+      }),
+    ).toBe(true);
+
+    expect(window.location.pathname).toBe("/");
+    expect(window.location.search).toBe("?next=%2Faccount");
+    expect(window.location.hash).toBe("#continue");
+
+    expect(document.body.textContent).not.toContain("Application content");
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+
+    const [url, options] = mockFetch.mock.calls[0]!;
+
+    expect(url).toBe("http://localhost:5000/api/v1/browser/auth/verify-email");
+    expect(options?.method).toBe("POST");
+    expect(JSON.parse(String(options?.body))).toEqual({
+      token: "valid-token",
+    });
+  });
+
+  it("shows an error when the verification token is rejected", async () => {
+    window.history.replaceState({}, "", "/?token=expired-token");
+
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({ message: "Invalid verification token" }, 400),
+    );
+
+    render(
+      <AuthProvider
+        apiUrl="http://localhost:5000/api/v1"
+        publishableKey="pk_test_example"
+      >
+        <div>Application content</div>
+      </AuthProvider>,
+    );
+
+    await waitFor(() => {
+      expect(document.body.textContent).toContain("couldn't verify your email");
+    });
+
+    expect(window.location.search).toBe("");
+    expect(document.body.textContent).not.toContain("Application content");
+  });
+
+  it("does not submit the same verification token twice in Strict Mode", async () => {
+    window.history.replaceState({}, "", "/?token=strict-mode-token");
+
+    mockFetch.mockResolvedValueOnce(jsonResponse(null));
+
+    render(
+      <StrictMode>
+        <AuthProvider
+          apiUrl="http://localhost:5000/api/v1"
+          publishableKey="pk_test_example"
+        >
+          <div>Application content</div>
+        </AuthProvider>
+      </StrictMode>,
+    );
+
+    await waitFor(() => {
+      expect(document.body.textContent).toContain("Email verified");
+    });
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });

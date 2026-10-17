@@ -154,6 +154,24 @@ export function LogoutControl() {
 
 The component prevents repeated sign-out requests while a sign-out operation is in progress.
 
+## Email verification
+
+Email verification is handled automatically by `AuthProvider`.
+
+When a user clicks the verification link sent by DigitAuth, the link opens your application with a verification token in the URL. The SDK automatically:
+
+- Detects the verification token.
+- Removes the token from the visible URL.
+- Sends the token to the DigitAuth API for validation.
+- Displays a loading, success, or error screen.
+- Restores your application's UI when the user chooses to continue.
+
+No custom verification page or `verifyEmail()` call is required for this default flow.
+
+Ensure that your application's configured origin is the destination used in its verification email. The API must remain reachable by the browser, and the backend determines whether the token is valid.
+
+For advanced integrations, `useAuth()` also exposes `verifyEmail(token)` and `resendVerificationEmail(email)` for explicit control over verification actions.
+
 ## 3. Build a custom authentication interface
 
 Use `useAuth()` when you need more control over your application's interface.

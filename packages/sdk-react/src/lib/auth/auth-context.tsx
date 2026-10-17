@@ -7,12 +7,18 @@ import {
   useEffect,
   useMemo,
   useState,
+  useRef,
   type ReactNode,
 } from "react";
 
 import { createApiClient } from "../api-client";
 import { createAuthService } from "./auth.service";
 import { tokenStorage } from "./token-storage";
+
+import {
+  EmailVerificationScreen,
+  type EmailVerificationState,
+} from "../../components/email-verification-screen";
 
 import type {
   AuthenticatedUser,
@@ -105,6 +111,52 @@ export function AuthProvider({
   const [isLoading, setIsLoading] = useState(true);
 
   const [authError, setAuthError] = useState<string | null>(null);
+
+  const [emailVerification, setEmailVerification] =
+    useState<EmailVerificationState | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    const token = url.searchParams.get("token");
+
+    if (token === null) {
+      return;
+    }
+
+    // Remove the sensitive token from the visible URL immediately,
+    // while preserving the path, other query parameters, and hash.
+    url.searchParams.delete("token");
+
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+
+    setEmailVerification({ status: "loading" });
+
+    // The backend remains the authority on verification success.
+    // No effect cleanup cancels this request, so React Strict Mode's
+    // development effect replay cannot strand the screen in loading.
+    void authService.verifyEmail(token).then(
+      () => {
+        setEmailVerification({ status: "success" });
+      },
+      (error: unknown) => {
+        setEmailVerification({
+          status: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "This verification link may be invalid or expired. Request a new verification email and try again.",
+        });
+      },
+    );
+  }, [authService]);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -472,7 +524,18 @@ export function AuthProvider({
     ],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {emailVerification ? (
+        <EmailVerificationScreen
+          state={emailVerification}
+          onContinue={() => setEmailVerification(null)}
+        />
+      ) : (
+        children
+      )}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth(): AuthContextValue {
