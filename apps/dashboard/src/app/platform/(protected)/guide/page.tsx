@@ -326,7 +326,7 @@ export default function GettingStartedPage() {
               Install the package
             </h3>
             <pre className="mt-3 overflow-x-auto rounded-xl border border-[var(--site-border)] bg-[var(--site-bg)] p-4 text-sm text-[var(--site-text)]">
-              <code>pnpm add @digit-auth/react</code>
+              <code>pnpm add @digit-auth/react@0.1.4</code>
             </pre>
             <p className="mt-3 text-sm leading-6 text-[var(--site-muted)]">
               The current UI components include SignIn, SignUp, SignedIn,
@@ -355,6 +355,26 @@ export default function GettingStartedPage() {
                 profile route when needed.
               </p>
             </div>
+          </div>
+
+          <div className="mb-4 rounded-2xl border border-[var(--site-border)] bg-[var(--site-surface)] p-5">
+            <h3 className="text-sm font-semibold text-[var(--site-text)]">
+              Automatic email verification
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-[var(--site-muted)]">
+              The React SDK automatically handles email verification when a user
+              opens a verification link containing a token in the applications
+              URL. It verifies the token through the DigitAuth API, removes the
+              token from the URL, and displays the appropriate loading, success,
+              or error screen. For the standard flow, you do not need to build a
+              separate verification page or manually call verifyEmail().
+            </p>
+            <p className="mt-2 text-sm leading-6 text-[var(--site-muted)]">
+              Make sure your applications verification link points to the
+              correct application origin and that the browser can reach your
+              configured DigitAuth API. Custom verification flows can use the
+              SDKs verification methods when needed.
+            </p>
           </div>
 
           <CodePanel
