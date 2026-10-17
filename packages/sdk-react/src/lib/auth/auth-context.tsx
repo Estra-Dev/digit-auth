@@ -115,6 +115,8 @@ export function AuthProvider({
   const [emailVerification, setEmailVerification] =
     useState<EmailVerificationState | null>(null);
 
+  const processedVerificationToken = useRef<string | null>(null);
+
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
@@ -126,6 +128,12 @@ export function AuthProvider({
     if (token === null) {
       return;
     }
+
+    if (processedVerificationToken.current === token) {
+      return;
+    }
+
+    processedVerificationToken.current = token;
 
     // Remove the sensitive token from the visible URL immediately,
     // while preserving the path, other query parameters, and hash.
