@@ -44,3 +44,12 @@ export type { ProtectedRouteProps } from "./components/protected-route";
 export type { SignOutButtonProps } from "./components/sign-out-button";
 
 export type { UserButtonProps } from "./components/user-button";
+
+export { SignIn } from "./components/sign-in";
+export type { SignInProps } from "./components/sign-in";
+
+export { SignUp } from "./components/sign-up";
+export type { SignUpProps } from "./components/sign-up";
+
+export { UserProfile } from "./components/user-profile";
+export type { UserProfileProps } from "./components/user-profile";

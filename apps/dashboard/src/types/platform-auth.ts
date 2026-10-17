@@ -32,6 +32,7 @@ export type PlatformApplication = {
   name: string;
   clientId: string;
   status: "ACTIVE" | "SUSPENDED";
+  allowedOrigins: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -39,6 +40,12 @@ export type PlatformApplication = {
 export type PlatformApplicationCredentials = {
   clientId: string;
   clientSecret: string;
+};
+
+export type PlatformApplicationCreationResult = {
+  application: PlatformApplication;
+  credentials: PlatformApplicationCredentials;
+  publishableKey: string;
 };
 
 export type PlatformUserApplication = {

@@ -8,6 +8,7 @@ import { AppError } from "../core/errors/AppError.js";
 import type {
   CreatePlatformApplicationInput,
   PlatformApplicationIdInput,
+  UpdatePlatformApplicationOriginsInput,
 } from "../validators/platform-application.validator.js";
 import { workspaceService } from "../modules/workspace/index.js";
 
@@ -126,6 +127,29 @@ export const rotatePlatformApplicationSecret = asyncHandler(
       statusCode: 200,
       message: "Application client secret rotated successfully.",
       data: result,
+    });
+  },
+);
+
+export const updatePlatformApplicationOrigins = asyncHandler(
+  async (req: Request<PlatformApplicationIdInput>, res: Response) => {
+    const body = req.body as UpdatePlatformApplicationOriginsInput;
+
+    const workspace = await workspaceService.getWorkspaceByOwnerId(
+      req.platformAccount!.id,
+    );
+
+    const application =
+      await applicationService.updateApplicationAllowedOrigins(
+        workspace.id,
+        req.params.id,
+        [...new Set(body.allowedOrigins)],
+      );
+
+    return ApiResponse.success(res, {
+      statusCode: 200,
+      message: "Application allowed origins updated successfully.",
+      data: application,
     });
   },
 );

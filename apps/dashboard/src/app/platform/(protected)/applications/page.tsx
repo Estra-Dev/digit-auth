@@ -23,6 +23,7 @@ export default function PlatformApplicationsPage() {
   const [name, setName] = useState("");
   const [credentials, setCredentials] =
     useState<PlatformApplicationCredentials | null>(null);
+  const [publishableKey, setPublishableKey] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -84,6 +85,7 @@ export default function PlatformApplicationsPage() {
       setApplications((current) => [result.application, ...current]);
 
       setCredentials(result.credentials);
+      setPublishableKey(result.publishableKey);
       setName("");
     } catch (error) {
       setError(
@@ -253,6 +255,7 @@ export default function PlatformApplicationsPage() {
                 onClick={() => {
                   setCredentials(null);
                   setCopied("");
+                  setPublishableKey(null);
                 }}
                 className="text-left text-sm text-slate-500 transition hover:text-white sm:text-right"
               >
@@ -287,6 +290,15 @@ export default function PlatformApplicationsPage() {
                   copyValue(credentials.clientSecret, "Client Secret")
                 }
                 secret
+              />
+
+              <CredentialRow
+                label="Publishable Key"
+                value={publishableKey ?? ""}
+                copied={copied === "Publishable Key"}
+                onCopy={() =>
+                  copyValue(publishableKey ?? "", "Publishable Key")
+                }
               />
             </div>
           </section>

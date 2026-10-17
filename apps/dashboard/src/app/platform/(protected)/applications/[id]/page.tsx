@@ -7,6 +7,7 @@ import {
   getPlatformApplication,
   rotatePlatformApplicationSecret,
   suspendPlatformApplication,
+  updatePlatformApplicationAllowedOrigins,
 } from "@/lib/platform-auth/platform-auth";
 import type {
   PlatformApplication,
@@ -24,6 +25,10 @@ export default function PlatformApplicationDetailsPage() {
   const [application, setApplication] = useState<PlatformApplication | null>(
     null,
   );
+
+  const [originsText, setOriginsText] = useState("");
+  const [savingOrigins, setSavingOrigins] = useState(false);
+  const [originsMessage, setOriginsMessage] = useState("");
 
   const [credentials, setCredentials] =
     useState<PlatformApplicationCredentials | null>(null);
@@ -44,6 +49,7 @@ export default function PlatformApplicationDetailsPage() {
 
         if (!cancelled) {
           setApplication(data);
+          setOriginsText((data.allowedOrigins ?? []).join("\n"));
         }
       } catch (error) {
         if (!cancelled) {
@@ -67,6 +73,41 @@ export default function PlatformApplicationDetailsPage() {
     };
   }, [applicationId]);
 
+  async function handleSaveOrigins() {
+    if (!application) return;
+
+    const allowedOrigins = [
+      ...new Set(
+        originsText
+          .split(/\r?\n/)
+          .map((origin) => origin.trim())
+          .filter(Boolean),
+      ),
+    ];
+
+    try {
+      setSavingOrigins(true);
+      setError("");
+      setOriginsMessage("");
+
+      const updated = await updatePlatformApplicationAllowedOrigins(
+        application.id,
+        allowedOrigins,
+      );
+
+      setApplication(updated);
+      setOriginsText((updated.allowedOrigins ?? []).join("\n"));
+      setOriginsMessage("Allowed origins saved successfully.");
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to save allowed origins.",
+      );
+    } finally {
+      setSavingOrigins(false);
+    }
+  }
   async function handleToggle() {
     if (!application) return;
 
@@ -271,6 +312,60 @@ export default function PlatformApplicationDetailsPage() {
               label="Last updated"
               value={new Date(application.updatedAt).toLocaleString()}
             />
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+          <div>
+            <h2 className="text-lg font-semibold">Allowed origins</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-400">
+              Register the websites that may use this applications browser
+              authentication. Enter one origin per line, without a path.
+            </p>
+          </div>
+
+          <div className="mt-5">
+            <label
+              htmlFor="allowed-origins"
+              className="mb-2 block text-sm font-medium text-slate-300"
+            >
+              Website origins
+            </label>
+
+            <textarea
+              id="allowed-origins"
+              value={originsText}
+              onChange={(event) => {
+                setOriginsText(event.target.value);
+                setOriginsMessage("");
+              }}
+              placeholder={"http://localhost:5173\nhttps://your-domain.com"}
+              rows={5}
+              spellCheck={false}
+              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 font-mono text-sm leading-6 text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-blue-500"
+            />
+
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Examples: http://localhost:5173 or https://app.example.com. Do not
+              include a trailing path such as /login.
+            </p>
+          </div>
+
+          {originsMessage && (
+            <p className="mt-4 text-sm text-emerald-400" role="status">
+              {originsMessage}
+            </p>
+          )}
+
+          <div className="mt-5 flex justify-end">
+            <button
+              type="button"
+              disabled={savingOrigins}
+              onClick={() => void handleSaveOrigins()}
+              className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {savingOrigins ? "Saving..." : "Save origins"}
+            </button>
           </div>
         </section>
 

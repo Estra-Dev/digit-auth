@@ -7,6 +7,7 @@ import type {
   PlatformSession,
   PlatformUser,
   PlatformApplicationSession,
+  PlatformApplicationCreationResult,
 } from "@/types/platform-auth";
 
 const API_BASE_URL =
@@ -292,17 +293,13 @@ export async function getPlatformUser(userId: string): Promise<PlatformUser> {
   return response.data;
 }
 
-export async function createPlatformApplication(name: string): Promise<{
-  application: PlatformApplication;
-  credentials: PlatformApplicationCredentials;
-}> {
+export async function createPlatformApplication(
+  name: string,
+): Promise<PlatformApplicationCreationResult> {
   const response = await request<{
     success: boolean;
     message: string;
-    data: {
-      application: PlatformApplication;
-      credentials: PlatformApplicationCredentials;
-    };
+    data: PlatformApplicationCreationResult;
   }>("/platform/applications", {
     method: "POST",
     body: JSON.stringify({ name }),
@@ -319,6 +316,22 @@ export async function getPlatformApplication(
     message: string;
     data: PlatformApplication;
   }>(`/platform/applications/${applicationId}`);
+
+  return response.data;
+}
+
+export async function updatePlatformApplicationAllowedOrigins(
+  applicationId: string,
+  allowedOrigins: string[],
+): Promise<PlatformApplication> {
+  const response = await request<{
+    success: boolean;
+    message: string;
+    data: PlatformApplication;
+  }>(`/platform/applications/${applicationId}/allowed-origins`, {
+    method: "PUT",
+    body: JSON.stringify({ allowedOrigins }),
+  });
 
   return response.data;
 }

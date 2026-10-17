@@ -31,6 +31,11 @@ const applicationSchema = new Schema(
       trim: true,
     },
 
+    allowedOrigins: {
+      type: [String],
+      default: [],
+    },
+
     clientSecretHash: {
       type: String,
       required: true,

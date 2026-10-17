@@ -102,6 +102,21 @@ export class ApplicationRepository {
       status: ApplicationStatus.ACTIVE,
     });
   }
+
+  async updateAllowedOrigins(
+    workspaceId: string,
+    applicationId: string,
+    allowedOrigins: string[],
+  ): Promise<ApplicationDocument | null> {
+    return Application.findOneAndUpdate(
+      {
+        _id: applicationId,
+        workspaceId,
+      },
+      { allowedOrigins },
+      { returnDocument: "after", runValidators: true },
+    );
+  }
 }
 
 export const applicationRepository = new ApplicationRepository();

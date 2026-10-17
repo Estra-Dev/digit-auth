@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import DigitAuthLogo from "@/components/digit-auth-logo";
 
 const navigation = [
   { label: "Features", href: "/#features" },
@@ -49,8 +50,8 @@ export default function SiteHeader() {
           className="flex shrink-0 items-center gap-2.5 sm:gap-3"
           onClick={closeMenu}
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-lg font-bold text-white shadow-lg shadow-blue-500/20 sm:h-10 sm:w-10">
-            D
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-400/25 bg-blue-500/10 text-blue-400 shadow-lg shadow-blue-500/10 sm:h-10 sm:w-10">
+            <DigitAuthLogo className="h-7 w-7" />
           </span>
 
           <span className="text-lg font-semibold tracking-tight sm:text-xl">

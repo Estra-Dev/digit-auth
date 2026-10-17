@@ -7,6 +7,7 @@ import {
   listPlatformApplications,
   rotatePlatformApplicationSecret,
   suspendPlatformApplication,
+  updatePlatformApplicationOrigins,
 } from "../controllers/platform-application.controller.js";
 
 import { requirePlatformAuth } from "../middlewares/require-platform-auth.middleware.js";
@@ -15,6 +16,7 @@ import { validate } from "../middlewares/validate.middleware.js";
 import {
   createPlatformApplicationSchema,
   platformApplicationIdSchema,
+  updatePlatformApplicationOriginsSchema,
 } from "../validators/platform-application.validator.js";
 
 const router = Router();
@@ -51,6 +53,12 @@ router.post(
   "/:id/rotate-secret",
   validate(platformApplicationIdSchema),
   rotatePlatformApplicationSecret,
+);
+
+router.put(
+  "/:id/allowed-origins",
+  validate(updatePlatformApplicationOriginsSchema),
+  updatePlatformApplicationOrigins,
 );
 
 export default router;

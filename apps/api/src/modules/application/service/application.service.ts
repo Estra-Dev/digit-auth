@@ -22,6 +22,7 @@ function mapApplication(application: {
   name: string;
   clientId: string;
   status: ApplicationStatus;
+  allowedOrigins: string[];
   createdAt: Date;
   updatedAt: Date;
 }) {
@@ -30,6 +31,7 @@ function mapApplication(application: {
     name: application.name,
     clientId: application.clientId,
     status: application.status,
+    allowedOrigins: application.allowedOrigins ?? [],
     createdAt: application.createdAt,
     updatedAt: application.updatedAt,
   };
@@ -204,6 +206,24 @@ export class ApplicationService {
     }
 
     return application;
+  }
+
+  async updateApplicationAllowedOrigins(
+    workspaceId: string,
+    applicationId: string,
+    allowedOrigins: string[],
+  ) {
+    const application = await applicationRepository.updateAllowedOrigins(
+      workspaceId,
+      applicationId,
+      allowedOrigins,
+    );
+
+    if (!application) {
+      throw new AppError("Application not found.", 404, true);
+    }
+
+    return mapApplication(application);
   }
 }
 

@@ -57,6 +57,19 @@ type AuthContextValue = {
   forgotPassword: (email: string) => Promise<ForgotPasswordResponse>;
 
   resetPassword: (data: ResetPasswordRequest) => Promise<void>;
+
+  updateProfile: (data: {
+    firstName?: string;
+    lastName?: string;
+  }) => Promise<void>;
+
+  changePassword: (data: {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+  }) => Promise<void>;
+
+  deleteAccount: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -193,7 +206,6 @@ export function AuthProvider({
 
       try {
         await authService.verifyEmail(token);
-        await refreshUser();
       } catch (error) {
         const message = getErrorMessage(error, "Unable to verify your email.");
 
@@ -202,7 +214,7 @@ export function AuthProvider({
         throw error;
       }
     },
-    [authService, refreshUser],
+    [authService],
   );
 
   const resendVerificationEmail = useCallback(
@@ -287,6 +299,71 @@ export function AuthProvider({
     [authService],
   );
 
+  const updateProfile = useCallback(
+    async (data: { firstName?: string; lastName?: string }) => {
+      setAuthError(null);
+
+      try {
+        const response = await apiClient.patch<AuthenticatedUser>(
+          "/profile",
+          data,
+        );
+
+        setUser(response.data);
+      } catch (error) {
+        const message = getErrorMessage(
+          error,
+          "Unable to update your profile.",
+        );
+
+        setAuthError(message);
+        throw error;
+      }
+    },
+    [apiClient],
+  );
+
+  const changePassword = useCallback(
+    async (data: {
+      currentPassword: string;
+      newPassword: string;
+      confirmPassword: string;
+    }) => {
+      setAuthError(null);
+
+      try {
+        await apiClient.patch<null>("/profile/password", data);
+      } catch (error) {
+        const message = getErrorMessage(
+          error,
+          "Unable to change your password.",
+        );
+
+        setAuthError(message);
+        throw error;
+      }
+    },
+    [apiClient],
+  );
+
+  const deleteAccount = useCallback(async () => {
+    setAuthError(null);
+
+    try {
+      await apiClient.delete<null>("/profile");
+
+      // Clear local authentication only after the API confirms deletion.
+      tokenStorage.clear();
+      setUser(null);
+      setAuthError(null);
+    } catch (error) {
+      const message = getErrorMessage(error, "Unable to delete your account.");
+
+      setAuthError(message);
+      throw error;
+    }
+  }, [apiClient]);
+
   useEffect(() => {
     let mounted = true;
 
@@ -343,6 +420,10 @@ export function AuthProvider({
       isAuthenticated: user !== null,
       authError,
 
+      updateProfile,
+      changePassword,
+      deleteAccount,
+
       refreshUser,
 
       login,
@@ -371,6 +452,10 @@ export function AuthProvider({
 
       login,
       register,
+
+      updateProfile,
+      changePassword,
+      deleteAccount,
 
       logout,
       logoutAll,

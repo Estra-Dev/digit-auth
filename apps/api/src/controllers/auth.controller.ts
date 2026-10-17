@@ -19,12 +19,33 @@ function getApplicationId(req: Request) {
   return req.application._id;
 }
 
+function getApplicationVerificationOrigin(req: Request): string | undefined {
+  const application = req.application;
+
+  if (!application) {
+    throw new Error("Application context is required");
+  }
+
+  const origin = req.get("Origin");
+  const allowedOrigins = application.allowedOrigins ?? [];
+
+  if (origin && allowedOrigins.includes(origin)) {
+    return origin;
+  }
+
+  return allowedOrigins[0];
+}
+
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const applicationId = getApplicationId(req);
 
   const body = parseRequest(registerSchema, req.body);
 
-  const user = await authService.register(applicationId, body);
+  const user = await authService.register(
+    applicationId,
+    body,
+    getApplicationVerificationOrigin(req),
+  );
 
   return ApiResponse.success(res, {
     statusCode: 201,
@@ -109,7 +130,11 @@ export const resendVerificationEmail = asyncHandler(
 
     const { email } = req.body;
 
-    await authService.resendVerificationEmail(applicationId, email);
+    await authService.resendVerificationEmail(
+      applicationId,
+      email,
+      getApplicationVerificationOrigin(req),
+    );
 
     return ApiResponse.success(res, {
       statusCode: 200,

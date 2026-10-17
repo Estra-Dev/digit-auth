@@ -41,7 +41,11 @@ import type { RefreshTokenInput } from "../validators/refresh-token.schema.js";
 import type { LogoutInput } from "../validators/logout.schema.js";
 
 export class AuthService {
-  async register(applicationId: Types.ObjectId, data: RegisterInput) {
+  async register(
+    applicationId: Types.ObjectId,
+    data: RegisterInput,
+    applicationOrigin?: string,
+  ) {
     const existingUser = await userRepository.findByEmail(
       applicationId,
       data.email,
@@ -64,6 +68,7 @@ export class AuthService {
     const verificationToken = await this.sendVerificationEmail(
       applicationId,
       user,
+      applicationOrigin,
     );
 
     const response = UserMapper.toResponse(user);
@@ -410,6 +415,7 @@ export class AuthService {
       firstName: string;
       email: string;
     },
+    applicationOrigin?: string,
   ): Promise<string> {
     const verificationToken = tokenService.generateVerificationToken();
 
@@ -425,9 +431,16 @@ export class AuthService {
     });
 
     try {
-      await emailService.sendVerificationEmail({
+      if (!applicationOrigin) {
+        throw new Error(
+          "Cannot send application verification email without a configured frontend origin.",
+        );
+      }
+
+      await emailService.sendApplicationVerificationEmail({
         email: user.email,
         verificationToken,
+        applicationOrigin,
       });
     } catch (error) {
       logger.error(
@@ -453,6 +466,7 @@ export class AuthService {
   async resendVerificationEmail(
     applicationId: Types.ObjectId,
     email: string,
+    applicationOrigin?: string,
   ): Promise<void> {
     const user = await userRepository.findByEmail(applicationId, email);
 
@@ -464,7 +478,7 @@ export class AuthService {
       return;
     }
 
-    await this.sendVerificationEmail(applicationId, user);
+    await this.sendVerificationEmail(applicationId, user, applicationOrigin);
   }
 
   private async sendPasswordResetEmail(
