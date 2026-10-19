@@ -52,18 +52,12 @@ export async function requireAuth(
     throw new AppError("Invalid authentication context.", 401, true);
   }
 
-  const user = await userRepository.findById(payload.sub);
+  const user = await userRepository.findByIdInApplication(
+    req.application._id,
+    payload.sub,
+  );
 
   if (!user) {
-    throw new AppError("User not found", 404, true);
-  }
-
-  if (!user.applicationId.equals(req.application._id)) {
-    // console.error("User application context mismatch:", {
-    //   userApplicationId: user.applicationId.toString(),
-    //   requestApplicationId: req.application._id.toString(),
-    // });
-
     throw new AppError("Invalid authentication context.", 401, true);
   }
 

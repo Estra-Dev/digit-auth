@@ -118,7 +118,7 @@ describe("GET /api/v1/auth/me", () => {
       auth.clientSecret,
     ).set("Authorization", `Bearer ${accessToken}`);
 
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(401);
     expect(response.body.success).toBe(false);
   });
 
