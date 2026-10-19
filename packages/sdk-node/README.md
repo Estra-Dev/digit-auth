@@ -37,7 +37,9 @@ npm install @digit-auth/node
 import { createDigitAuth } from "@digit-auth/node";
 
 const auth = createDigitAuth({
-  apiUrl: "https://your-digit-auth-api.example.com/api/v1",
+  apiUrl: process.env.DIGIT_AUTH_API_URL!,
+  clientId: process.env.DIGIT_AUTH_CLIENT_ID!,
+  clientSecret: process.env.DIGIT_AUTH_CLIENT_SECRET!,
 });
 ```
 
