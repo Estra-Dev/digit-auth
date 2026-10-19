@@ -17,12 +17,6 @@ export class UserRepository {
     });
   }
 
-  // Find a user by ID.
-
-  async findById(id: string): Promise<UserDocument | null> {
-    return User.findById(id);
-  }
-
   // Find a user by ID within an application.
 
   async findByIdInApplication(
@@ -237,27 +231,6 @@ export class UserRepository {
     });
   }
 
-  // Legacy/global query retained for existing internal callers.
-
-  async findAll() {
-    return User.find().sort({
-      createdAt: -1,
-    });
-  }
-
-  async updateById(userId: string, data: Record<string, unknown>) {
-    return User.findByIdAndUpdate(
-      userId,
-      {
-        $set: data,
-      },
-      { returnDocument: "after", runValidators: true },
-    );
-  }
-
-  async deleteById(userId: string) {
-    return User.findByIdAndDelete(userId);
-  }
 }
 
 export const userRepository = new UserRepository();
