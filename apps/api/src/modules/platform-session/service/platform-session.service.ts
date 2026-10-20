@@ -1,5 +1,6 @@
 import { sessionRepository } from "../../auth/repositories/session.repository.js";
 import { AppError } from "../../../core/errors/AppError.js";
+import { logger } from "../../../config/logger.js";
 
 type PopulatedUser = {
   _id: {
@@ -33,6 +34,19 @@ export class PlatformSessionService {
         session.applicationId as unknown as PopulatedApplication;
 
       if (!user || !application) {
+        logger.error(
+          {
+            sessionId: session.id,
+            userRelationshipMissing: !user,
+            applicationRelationshipMissing: !application,
+            userId: user ? String(user._id) : String(session.userId),
+            applicationId: application
+              ? String(application._id)
+              : String(session.applicationId),
+          },
+          "Platform session has an invalid relationship",
+        );
+
         throw new AppError("Invalid session relationship.", 500, false);
       }
 
