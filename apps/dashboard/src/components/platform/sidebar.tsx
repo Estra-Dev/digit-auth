@@ -33,6 +33,11 @@ const navigation = [
     icon: <path d="M12 8v4l3 2M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" />,
   },
   {
+    name: "My sessions",
+    href: "/platform/account-sessions",
+    icon: <path d="M12 8v4l3 2M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" />,
+  },
+  {
     name: "Getting started",
     href: "/platform/guide",
     icon: (

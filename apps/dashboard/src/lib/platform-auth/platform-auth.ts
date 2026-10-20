@@ -249,6 +249,26 @@ export async function getPlatformSessions(): Promise<PlatformSession[]> {
   return response.data;
 }
 
+export async function revokePlatformSession(sessionId: string): Promise<void> {
+  await request<{
+    success: boolean;
+    message: string;
+    data: null;
+  }>(`/platform/auth/sessions/${encodeURIComponent(sessionId)}`, {
+    method: "DELETE",
+  });
+}
+
+export async function revokeOtherPlatformSessions(): Promise<void> {
+  await request<{
+    success: boolean;
+    message: string;
+    data: null;
+  }>("/platform/auth/sessions", {
+    method: "DELETE",
+  });
+}
+
 export async function getPlatformApplicationSessions(): Promise<
   PlatformApplicationSession[]
 > {
