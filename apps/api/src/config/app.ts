@@ -14,6 +14,9 @@ import { config } from "./index.js";
 
 const app = express();
 
+// Trust the single proxy hop in front of the app on Render.
+app.set("trust proxy", 1);
+
 registerMiddleware(app);
 
 if (config.env !== "production") {
