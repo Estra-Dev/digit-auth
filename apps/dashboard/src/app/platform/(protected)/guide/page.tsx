@@ -404,7 +404,7 @@ export default function GettingStartedPage() {
               Install the packages
             </h3>
             <pre className="mt-3 overflow-x-auto rounded-xl border border-[var(--site-border)] bg-[var(--site-bg)] p-4 text-sm text-[var(--site-text)]">
-              <code>pnpm add @digit-auth/node express</code>
+              <code>pnpm add @digit-auth/node@0.1.0 express</code>
             </pre>
           </div>
 
