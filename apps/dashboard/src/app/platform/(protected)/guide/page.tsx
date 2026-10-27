@@ -57,6 +57,8 @@ const app = express();
 
 const auth = createDigitAuth({
   apiUrl: process.env.DIGIT_AUTH_API_URL!,
+  clientId: process.env.DIGIT_AUTH_CLIENT_ID!,
+  clientSecret: process.env.DIGIT_AUTH_CLIENT_SECRET!,
 });
 
 app.get("/api/profile", requireAuth(auth), (req, res) => {
@@ -72,11 +74,14 @@ app.listen(3001, () => {
 });`;
 
 const envExample = `# React + Next.js client configuration
-NEXT_PUBLIC_DIGIT_AUTH_API_URL=http://localhost:5000/api/v1
+NEXT_PUBLIC_DIGIT_AUTH_API_URL=https://digit-auth.onrender.com/api/v1
 NEXT_PUBLIC_DIGIT_AUTH_PUBLISHABLE_KEY=your_publishable_key
 
-# Server-side configuration for a Node.js application
-DIGIT_AUTH_API_URL=http://localhost:5000/api/v1`;
+# Server-side Node.js configuration
+DIGIT_AUTH_API_URL=https://digit-auth.onrender.com/api/v1
+DIGIT_AUTH_CLIENT_ID=your_digit_auth_client_id
+DIGIT_AUTH_CLIENT_SECRET=your_digit_auth_client_secret
+WEBHOOK_ENCRYPTION_KEY=replace_with_base64_encoded_32_byte_key`;
 
 const steps = [
   {
@@ -404,7 +409,7 @@ export default function GettingStartedPage() {
               Install the packages
             </h3>
             <pre className="mt-3 overflow-x-auto rounded-xl border border-[var(--site-border)] bg-[var(--site-bg)] p-4 text-sm text-[var(--site-text)]">
-              <code>pnpm add @digit-auth/node@0.1.0 express</code>
+              <code>pnpm add @digit-auth/node@0.1.1 express</code>
             </pre>
           </div>
 
@@ -459,39 +464,47 @@ export default function GettingStartedPage() {
 
         <section className="mb-12">
           <SectionHeading
-            eyebrow="Authentication reference"
-            title="What you can integrate"
-            description="Common authentication API route suffixes for application integrations."
+            eyebrow="Events"
+            title="Webhooks"
+            description="Receive application events on your server and verify each delivery before processing it."
           />
 
-          <div className="overflow-hidden rounded-2xl border border-[var(--site-border)]">
-            {authRoutes.map(([label, method, path], index) => (
-              <div
-                key={path}
-                className={[
-                  "flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5",
-                  index > 0 ? "border-t border-[var(--site-border)]" : "",
-                ].join(" ")}
-              >
-                <span className="min-w-32 flex-1 text-sm text-[var(--site-text)]">
-                  {label}
-                </span>
-                <span className="rounded-md bg-blue-500/10 px-2 py-1 text-[10px] font-semibold text-blue-500">
-                  {method}
-                </span>
-                <code className="break-all text-xs text-[var(--site-muted)]">
-                  {path}
-                </code>
-              </div>
-            ))}
-          </div>
+          <div className="rounded-2xl border border-[var(--site-border)] bg-[var(--site-surface)] p-5">
+            <h3 className="text-sm font-semibold text-[var(--site-text)]">
+              Configure webhook delivery
+            </h3>
 
-          <p className="mt-3 text-xs leading-5 text-[var(--site-muted)]">
-            These are route suffixes, not complete URLs. The API base path is
-            /api/v1. Verify the actual route group, request bodies, required
-            headers, and response shapes against the current API implementation
-            before calling endpoints directly.
-          </p>
+            <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-[var(--site-muted)]">
+              <li>
+                Open your application and configure its webhook endpoint URL.
+              </li>
+              <li>Store the signing secret securely when it is generated.</li>
+              <li>
+                Set WEBHOOK_ENCRYPTION_KEY in the API deployment environment.
+              </li>
+              <li>
+                Register a new user and check your endpoint for the user.created
+                event.
+              </li>
+            </ol>
+
+            <h3 className="mt-5 text-sm font-semibold text-[var(--site-text)]">
+              Verify incoming requests
+            </h3>
+
+            <p className="mt-2 text-sm leading-6 text-[var(--site-muted)]">
+              DigitAuth signs the timestamp and exact raw request body using
+              HMAC-SHA256. Verify the digitauth-signature header against your
+              application's signing secret before processing the JSON payload.
+              Compare signatures in constant time and reject stale timestamps.
+            </p>
+
+            <p className="mt-3 text-sm leading-6 text-[var(--site-muted)]">
+              Delivery uses a 10-second timeout and retries failures up to eight
+              attempts. Redirects are not followed, and the receiver should
+              return a 2xx response after accepting an event.
+            </p>
+          </div>
         </section>
 
         <section className="mb-12">

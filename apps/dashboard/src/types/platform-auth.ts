@@ -33,6 +33,7 @@ export type PlatformApplication = {
   clientId: string;
   status: "ACTIVE" | "SUSPENDED";
   allowedOrigins: string[];
+  webhookUrl: string | null;
   createdAt: string;
   updatedAt: string;
 };

@@ -9,6 +9,7 @@ import type {
   CreatePlatformApplicationInput,
   PlatformApplicationIdInput,
   UpdatePlatformApplicationOriginsInput,
+  UpdatePlatformApplicationWebhookInput,
 } from "../validators/platform-application.validator.js";
 import { workspaceService } from "../modules/workspace/index.js";
 
@@ -150,6 +151,30 @@ export const updatePlatformApplicationOrigins = asyncHandler(
       statusCode: 200,
       message: "Application allowed origins updated successfully.",
       data: application,
+    });
+  },
+);
+
+export const updatePlatformApplicationWebhook = asyncHandler(
+  async (req: Request<PlatformApplicationIdInput>, res: Response) => {
+    const body = req.body as UpdatePlatformApplicationWebhookInput;
+
+    const workspace = await workspaceService.getWorkspaceByOwnerId(
+      req.platformAccount!.id,
+    );
+
+    const result = await applicationService.updateWebhookConfiguration(
+      workspace.id,
+      req.params.id,
+      body.webhookUrl,
+    );
+
+    return ApiResponse.success(res, {
+      statusCode: 200,
+      message: result.webhook.enabled
+        ? "Application webhook configured successfully."
+        : "Application webhook disabled successfully.",
+      data: result,
     });
   },
 );

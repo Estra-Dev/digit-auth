@@ -33,6 +33,7 @@ type AuthContextValue = {
   isLoading: boolean;
   isAuthenticated: boolean;
   authError: string | null;
+  getAccessToken: () => string | null;
 
   refreshUser: () => Promise<void>;
 
@@ -179,6 +180,10 @@ export function AuthProvider({
       throw error;
     }
   }, [authService]);
+
+  const getAccessToken = useCallback(() => {
+    return tokenStorage.getAccessToken();
+  }, []);
 
   const login = useCallback(
     async (data: { email: string; password: string }) => {
@@ -479,6 +484,7 @@ export function AuthProvider({
       isLoading,
       isAuthenticated: user !== null,
       authError,
+      getAccessToken,
 
       updateProfile,
       changePassword,
@@ -507,6 +513,7 @@ export function AuthProvider({
       user,
       isLoading,
       authError,
+      getAccessToken,
 
       refreshUser,
 

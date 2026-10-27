@@ -39,6 +39,8 @@ import type { LoginInput } from "../validators/login.schema.js";
 import type { ResetPasswordInput } from "../validators/reset-password.schema.js";
 import type { RefreshTokenInput } from "../validators/refresh-token.schema.js";
 import type { LogoutInput } from "../validators/logout.schema.js";
+import WebhookEvent from "../modules/webhook/model/webhook-event.model.js";
+import { Application } from "../modules/application/model/application.model.js";
 
 export class AuthService {
   async register(
@@ -57,13 +59,58 @@ export class AuthService {
 
     const hashedPassword = await passwordService.hash(data.password);
 
-    const user = await userRepository.create({
-      applicationId,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      passwordHashed: hashedPassword,
-    });
+    const dbSession = await mongoose.startSession();
+
+    let user: Awaited<ReturnType<typeof userRepository.create>>;
+
+    try {
+      user = await dbSession.withTransaction(async () => {
+        const createdUser = await userRepository.create(
+          {
+            applicationId,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            passwordHashed: hashedPassword,
+          },
+          dbSession,
+        );
+
+        const applicationWithWebhook = await Application.findOne({
+          _id: applicationId,
+          webhookUrl: { $type: "string", $ne: "" },
+        })
+          .select("_id")
+          .session(dbSession)
+          .lean();
+
+        if (applicationWithWebhook) {
+          await WebhookEvent.create(
+            [
+              {
+                applicationId,
+                event: "user.created",
+                resourceId: createdUser._id,
+                payload: {
+                  id: createdUser._id.toString(),
+                  applicationId: applicationId.toString(),
+                  firstName: createdUser.firstName,
+                  lastName: createdUser.lastName,
+                  email: createdUser.email,
+                  emailVerified: createdUser.emailVerified,
+                  createdAt: createdUser.createdAt,
+                },
+              },
+            ],
+            { session: dbSession },
+          );
+        }
+
+        return createdUser;
+      });
+    } finally {
+      await dbSession.endSession();
+    }
 
     const verificationToken = await this.sendVerificationEmail(
       applicationId,

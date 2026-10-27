@@ -117,6 +117,38 @@ export class ApplicationRepository {
       { returnDocument: "after", runValidators: true },
     );
   }
+
+  async findByIdInWorkspaceWithWebhookSecret(
+    applicationId: string,
+    workspaceId: string,
+  ): Promise<ApplicationDocument | null> {
+    return Application.findOne({
+      _id: applicationId,
+      workspaceId,
+    }).select("+webhookSecretEncrypted");
+  }
+
+  async updateWebhookConfiguration(
+    workspaceId: string,
+    applicationId: string,
+    webhookUrl: string | null,
+    webhookSecretEncrypted: string | null,
+  ): Promise<ApplicationDocument | null> {
+    return Application.findOneAndUpdate(
+      {
+        _id: applicationId,
+        workspaceId,
+      },
+      {
+        webhookUrl,
+        webhookSecretEncrypted,
+      },
+      {
+        returnDocument: "after",
+        runValidators: true,
+      },
+    );
+  }
 }
 
 export const applicationRepository = new ApplicationRepository();

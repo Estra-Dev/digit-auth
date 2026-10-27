@@ -50,6 +50,38 @@ const updateApplicationOriginsBodySchema = z.object({
     .max(50),
 });
 
+const updatePlatformApplicationWebhookBodySchema = z.object({
+  webhookUrl: z
+    .string()
+    .trim()
+    .url()
+    .refine((value) => {
+      try {
+        const url = new URL(value);
+
+        return (
+          url.protocol === "https:" ||
+          (process.env.NODE_ENV !== "production" &&
+            url.protocol === "http:" &&
+            ["localhost", "127.0.0.1", "::1"].includes(url.hostname))
+        );
+      } catch {
+        return false;
+      }
+    }, "Webhook URL must use HTTPS, except for localhost during development.")
+    .nullable(),
+});
+
+export const updatePlatformApplicationWebhookSchema = z.object({
+  body: updatePlatformApplicationWebhookBodySchema,
+  params: applicationIdParamsSchema,
+  query: z.object({}),
+});
+
+export type UpdatePlatformApplicationWebhookInput = z.infer<
+  typeof updatePlatformApplicationWebhookBodySchema
+>;
+
 export const updatePlatformApplicationOriginsSchema = z.object({
   body: updateApplicationOriginsBodySchema,
   params: applicationIdParamsSchema,

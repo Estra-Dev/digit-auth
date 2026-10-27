@@ -8,6 +8,7 @@ import {
   rotatePlatformApplicationSecret,
   suspendPlatformApplication,
   updatePlatformApplicationOrigins,
+  updatePlatformApplicationWebhook,
 } from "../controllers/platform-application.controller.js";
 
 import { requirePlatformAuth } from "../middlewares/require-platform-auth.middleware.js";
@@ -17,6 +18,7 @@ import {
   createPlatformApplicationSchema,
   platformApplicationIdSchema,
   updatePlatformApplicationOriginsSchema,
+  updatePlatformApplicationWebhookSchema,
 } from "../validators/platform-application.validator.js";
 
 const router = Router();
@@ -59,6 +61,12 @@ router.put(
   "/:id/allowed-origins",
   validate(updatePlatformApplicationOriginsSchema),
   updatePlatformApplicationOrigins,
+);
+
+router.put(
+  "/:id/webhook",
+  validate(updatePlatformApplicationWebhookSchema),
+  updatePlatformApplicationWebhook,
 );
 
 export default router;

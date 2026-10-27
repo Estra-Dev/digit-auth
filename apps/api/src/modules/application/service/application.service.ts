@@ -23,6 +23,7 @@ function mapApplication(application: {
   clientId: string;
   status: ApplicationStatus;
   allowedOrigins: string[];
+  webhookUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
@@ -32,6 +33,7 @@ function mapApplication(application: {
     clientId: application.clientId,
     status: application.status,
     allowedOrigins: application.allowedOrigins ?? [],
+    webhookUrl: application.webhookUrl ?? null,
     createdAt: application.createdAt,
     updatedAt: application.updatedAt,
   };
@@ -224,6 +226,63 @@ export class ApplicationService {
     }
 
     return mapApplication(application);
+  }
+
+  async updateWebhookConfiguration(
+    workspaceId: string,
+    applicationId: string,
+    webhookUrl: string | null,
+  ) {
+    const application =
+      await applicationRepository.findByIdInWorkspaceWithWebhookSecret(
+        applicationId,
+        workspaceId,
+      );
+
+    if (!application) {
+      throw new AppError("Application not found.", 404, true);
+    }
+
+    let encryptedSecret = application.webhookSecretEncrypted ?? null;
+    let signingSecret: string | undefined;
+
+    if (webhookUrl !== null && !encryptedSecret) {
+      const { generateWebhookSecret, encryptWebhookSecret } =
+        await import("../../webhook/service/webhook-secret.service.js");
+
+      signingSecret = generateWebhookSecret();
+      encryptedSecret = encryptWebhookSecret(signingSecret);
+    }
+
+    const updated = await applicationRepository.updateWebhookConfiguration(
+      workspaceId,
+      applicationId,
+      webhookUrl,
+      encryptedSecret,
+    );
+
+    if (!updated) {
+      throw new AppError("Application not found.", 404, true);
+    }
+
+    if (webhookUrl === null) {
+      return {
+        application: mapApplication(updated),
+        webhook: {
+          enabled: false,
+          url: null,
+        },
+      };
+    }
+
+    return {
+      application: mapApplication(updated),
+      webhook: {
+        enabled: true,
+        url: updated.webhookUrl,
+        ...(signingSecret ? { signingSecret } : {}),
+      },
+    };
   }
 }
 

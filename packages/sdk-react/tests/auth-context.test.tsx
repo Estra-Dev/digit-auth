@@ -80,6 +80,28 @@ describe("AuthProvider", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
+  it("returns null when no access token exists", async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.getAccessToken()).toBeNull();
+  });
+
+  it("exposes the current access token through useAuth", async () => {
+    tokenStorage.setAccessToken("projectvault-access-token");
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.getAccessToken()).toBe("projectvault-access-token");
+  });
+
   it("restores the user when a refresh token exists", async () => {
     tokenStorage.setAccessToken("saved-access");
     tokenStorage.setRefreshToken("saved-refresh");

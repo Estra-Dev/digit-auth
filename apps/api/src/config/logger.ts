@@ -1,10 +1,41 @@
-import pino, { levels, transport } from "pino";
+import pino from "pino";
 import { config } from "./index.js";
 
-const loggerOptions =
-  config.env === "development"
+const redactPaths = [
+  "password",
+  "currentPassword",
+  "newPassword",
+  "confirmPassword",
+  "passwordHash",
+  "passwordHashed",
+  "clientSecret",
+  "clientSecretHash",
+  "clientSecretHashed",
+  "accessToken",
+  "refreshToken",
+  "token",
+  "verificationToken",
+  "resetToken",
+  "authorization",
+  "cookie",
+  "req.headers.authorization",
+  "req.headers.cookie",
+  "headers.authorization",
+  "headers.cookie",
+  "*.password",
+  "*.clientSecret",
+  "*.accessToken",
+  "*.refreshToken",
+];
+
+const loggerOptions = {
+  level: "info",
+  redact: {
+    paths: redactPaths,
+    censor: "[REDACTED]",
+  },
+  ...(config.env === "development"
     ? {
-        level: "info",
         transport: {
           target: "pino-pretty",
           options: {
@@ -14,8 +45,7 @@ const loggerOptions =
           },
         },
       }
-    : {
-        level: "info",
-      };
+    : {}),
+};
 
 export const logger = pino(loggerOptions);

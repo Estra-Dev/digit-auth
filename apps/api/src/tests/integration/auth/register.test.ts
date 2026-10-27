@@ -12,10 +12,11 @@ import { VerificationToken } from "../../../modules/auth/model/verification-toke
 import { buildRegisterPayload } from "../../helpers/factories.js";
 import { getTestWorkspace } from "../../helpers/workspace.helper.js";
 import { withApplicationCredentials } from "../../helpers/application-auth.helper.js";
+import WebhookEvent from "../../../modules/webhook/model/webhook-event.model.js";
 
 const applicationService = new ApplicationService();
 
-async function createTestApplication() {
+async function createTestApplication(webhookUrl?: string) {
   const workspace = await getTestWorkspace();
 
   const { application, credentials } =
@@ -23,6 +24,14 @@ async function createTestApplication() {
       workspace.id,
       "DigitAuth Test Application",
     );
+
+  if (webhookUrl) {
+    await applicationService.updateWebhookConfiguration(
+      workspace.id,
+      application.id,
+      webhookUrl,
+    );
+  }
 
   return {
     applicationId: new Types.ObjectId(application.id),
@@ -34,7 +43,7 @@ async function createTestApplication() {
 describe("POST /api/v1/auth/register", () => {
   it("should register a new user successfully", async () => {
     const { applicationId, clientId, clientSecret } =
-      await createTestApplication();
+      await createTestApplication("https://example.com/webhooks");
     const payload = buildRegisterPayload();
 
     const response = await withApplicationCredentials(
@@ -66,12 +75,56 @@ describe("POST /api/v1/auth/register", () => {
 
     expect(user?.emailVerified).toBe(false);
 
+    const webhookEvent = await WebhookEvent.findOne().where({
+      applicationId,
+      event: "user.created",
+      resourceId: user!._id,
+    });
+
+    expect(webhookEvent).not.toBeNull();
+    expect(webhookEvent?.status).toBe("pending");
+    expect(webhookEvent?.payload.id).toBe(user!._id.toString());
+    expect(webhookEvent?.payload.applicationId).toBe(applicationId.toString());
+    expect(webhookEvent?.payload.email).toBe(payload.email);
+    expect(webhookEvent?.payload).not.toHaveProperty("password");
+    expect(webhookEvent?.payload).not.toHaveProperty("passwordHashed");
+
     const verificationToken = await VerificationToken.findOne({
       applicationId,
       userId: user!._id,
     });
 
     expect(verificationToken).not.toBeNull();
+  });
+
+  it("should register a user without creating a webhook event when no webhook is configured", async () => {
+    const { applicationId, clientId, clientSecret } =
+      await createTestApplication();
+
+    const payload = buildRegisterPayload();
+
+    const response = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/register"),
+      clientId,
+      clientSecret,
+    ).send(payload);
+
+    expect(response.status).toBe(201);
+
+    const user = await User.findOne({
+      applicationId,
+      email: payload.email,
+    });
+
+    expect(user).not.toBeNull();
+
+    const webhookEvent = await WebhookEvent.findOne({
+      applicationId,
+      event: "user.created",
+      resourceId: user!._id,
+    });
+
+    expect(webhookEvent).toBeNull();
   });
 
   it("should reject duplicate email registration", async () => {

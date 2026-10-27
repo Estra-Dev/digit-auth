@@ -36,6 +36,17 @@ const applicationSchema = new Schema(
       default: [],
     },
 
+    webhookUrl: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    webhookSecretEncrypted: {
+      type: String,
+      default: null,
+      select: false,
+    },
+
     clientSecretHash: {
       type: String,
       required: true,

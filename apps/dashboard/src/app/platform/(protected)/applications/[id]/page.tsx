@@ -8,6 +8,7 @@ import {
   rotatePlatformApplicationSecret,
   suspendPlatformApplication,
   updatePlatformApplicationAllowedOrigins,
+  updatePlatformApplicationWebhook,
 } from "@/lib/platform-auth/platform-auth";
 import type {
   PlatformApplication,
@@ -30,6 +31,10 @@ export default function PlatformApplicationDetailsPage() {
   const [savingOrigins, setSavingOrigins] = useState(false);
   const [originsMessage, setOriginsMessage] = useState("");
 
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [savingWebhook, setSavingWebhook] = useState(false);
+  const [webhookMessage, setWebhookMessage] = useState("");
+
   const [credentials, setCredentials] =
     useState<PlatformApplicationCredentials | null>(null);
 
@@ -50,6 +55,7 @@ export default function PlatformApplicationDetailsPage() {
         if (!cancelled) {
           setApplication(data);
           setOriginsText((data.allowedOrigins ?? []).join("\n"));
+          setWebhookUrl(data.webhookUrl ?? "");
         }
       } catch (error) {
         if (!cancelled) {
@@ -108,6 +114,40 @@ export default function PlatformApplicationDetailsPage() {
       setSavingOrigins(false);
     }
   }
+
+  async function handleSaveWebhook() {
+    if (!application) return;
+
+    const normalizedUrl = webhookUrl.trim();
+
+    try {
+      setSavingWebhook(true);
+      setError("");
+      setWebhookMessage("");
+
+      const updated = await updatePlatformApplicationWebhook(
+        application.id,
+        normalizedUrl || null,
+      );
+
+      setApplication(updated);
+      setWebhookUrl(updated.webhookUrl ?? "");
+      setWebhookMessage(
+        updated.webhookUrl
+          ? "Webhook URL saved successfully."
+          : "Webhook disabled successfully.",
+      );
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to update webhook settings.",
+      );
+    } finally {
+      setSavingWebhook(false);
+    }
+  }
+
   async function handleToggle() {
     if (!application) return;
 
@@ -365,6 +405,74 @@ export default function PlatformApplicationDetailsPage() {
               className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {savingOrigins ? "Saving..." : "Save origins"}
+            </button>
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+          <div>
+            <h2 className="text-lg font-semibold">Webhooks</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-400">
+              Configure an HTTPS endpoint to receive authentication events from
+              DigitAuth. Use an endpoint on your server, not a browser page.
+            </p>
+          </div>
+
+          <div className="mt-5">
+            <label
+              htmlFor="webhook-url"
+              className="mb-2 block text-sm font-medium text-slate-300"
+            >
+              Webhook endpoint URL
+            </label>
+
+            <input
+              id="webhook-url"
+              type="url"
+              value={webhookUrl}
+              onChange={(event) => {
+                setWebhookUrl(event.target.value);
+                setWebhookMessage("");
+              }}
+              placeholder="https://api.example.com/webhooks/digit-auth"
+              spellCheck={false}
+              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 font-mono text-sm text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-blue-500"
+            />
+
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Leave the field empty to disable the webhook. Production endpoints
+              must use HTTPS.
+            </p>
+          </div>
+
+          {webhookMessage && (
+            <p className="mt-4 text-sm text-emerald-400" role="status">
+              {webhookMessage}
+            </p>
+          )}
+
+          <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            {application.webhookUrl && (
+              <button
+                type="button"
+                disabled={savingWebhook}
+                onClick={() => {
+                  setWebhookUrl("");
+                  setWebhookMessage("");
+                }}
+                className="rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Clear URL
+              </button>
+            )}
+
+            <button
+              type="button"
+              disabled={savingWebhook}
+              onClick={() => void handleSaveWebhook()}
+              className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {savingWebhook ? "Saving..." : "Save webhook"}
             </button>
           </div>
         </section>

@@ -1,6 +1,6 @@
 {
   "name": "@digit-auth/node",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": false,
   "description": "Node.js and Express SDK for DigitAuth authentication and authorization.",
   "type": "module",

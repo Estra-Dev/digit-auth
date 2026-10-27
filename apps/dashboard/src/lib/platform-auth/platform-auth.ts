@@ -356,6 +356,22 @@ export async function updatePlatformApplicationAllowedOrigins(
   return response.data;
 }
 
+export async function updatePlatformApplicationWebhook(
+  applicationId: string,
+  webhookUrl: string | null,
+): Promise<PlatformApplication> {
+  const response = await request<{
+    success: boolean;
+    message: string;
+    data: PlatformApplication;
+  }>(`/platform/applications/${applicationId}/webhook`, {
+    method: "PUT",
+    body: JSON.stringify({ webhookUrl }),
+  });
+
+  return response.data;
+}
+
 export async function suspendPlatformApplication(
   applicationId: string,
 ): Promise<PlatformApplication> {
