@@ -9,6 +9,7 @@ import {
   suspendPlatformApplication,
   updatePlatformApplicationAllowedOrigins,
   updatePlatformApplicationWebhook,
+  rotatePlatformApplicationWebhookSecret,
 } from "@/lib/platform-auth/platform-auth";
 import type {
   PlatformApplication,
@@ -34,6 +35,11 @@ export default function PlatformApplicationDetailsPage() {
   const [webhookUrl, setWebhookUrl] = useState("");
   const [savingWebhook, setSavingWebhook] = useState(false);
   const [webhookMessage, setWebhookMessage] = useState("");
+
+  const [rotatingWebhookSecret, setRotatingWebhookSecret] = useState(false);
+  const [webhookSigningSecret, setWebhookSigningSecret] = useState<
+    string | null
+  >(null);
 
   const [credentials, setCredentials] =
     useState<PlatformApplicationCredentials | null>(null);
@@ -145,6 +151,37 @@ export default function PlatformApplicationDetailsPage() {
       );
     } finally {
       setSavingWebhook(false);
+    }
+  }
+
+  async function handleRotateWebhookSecret() {
+    if (!application) return;
+
+    const confirmed = window.confirm(
+      "Rotate the webhook signing secret? The current secret will stop working immediately. Update your webhook receiver with the new secret.",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setRotatingWebhookSecret(true);
+      setError("");
+      setWebhookSigningSecret(null);
+
+      const result = await rotatePlatformApplicationWebhookSecret(
+        application.id,
+      );
+
+      setApplication(result.application);
+      setWebhookSigningSecret(result.signingSecret);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to rotate webhook signing secret.",
+      );
+    } finally {
+      setRotatingWebhookSecret(false);
     }
   }
 
@@ -475,6 +512,58 @@ export default function PlatformApplicationDetailsPage() {
               {savingWebhook ? "Saving..." : "Save webhook"}
             </button>
           </div>
+          {application.webhookUrl && (
+            <div className="mt-6 border-t border-slate-800 pt-5">
+              <h3 className="text-sm font-semibold text-slate-200">
+                Webhook signing secret
+              </h3>
+
+              <p className="mt-1 text-sm leading-6 text-slate-400">
+                Use this secret to verify webhook signatures on your server.
+                Rotating it invalidates the previous secret.
+              </p>
+
+              <button
+                type="button"
+                disabled={rotatingWebhookSecret}
+                onClick={() => void handleRotateWebhookSecret()}
+                className="mt-4 rounded-lg border border-amber-700 px-4 py-2.5 text-sm font-medium text-amber-300 transition hover:bg-amber-950 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {rotatingWebhookSecret
+                  ? "Rotating..."
+                  : "Rotate signing secret"}
+              </button>
+
+              {webhookSigningSecret && (
+                <div className="mt-4 rounded-xl border border-slate-700 bg-slate-950 p-4">
+                  <p
+                    className="text-sm font-medium text-emerald-400"
+                    role="status"
+                  >
+                    New signing secret generated. Copy it now; it will not be
+                    shown again.
+                  </p>
+
+                  <code className="mt-3 block break-all text-sm text-slate-200">
+                    {webhookSigningSecret}
+                  </code>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void copyValue(
+                        webhookSigningSecret,
+                        "Webhook signing secret",
+                      )
+                    }
+                    className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-500"
+                  >
+                    Copy signing secret
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">

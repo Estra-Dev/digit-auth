@@ -228,6 +228,52 @@ export class ApplicationService {
     return mapApplication(application);
   }
 
+  async rotateWebhookSigningSecret(workspaceId: string, applicationId: string) {
+    const application =
+      await applicationRepository.findByIdInWorkspaceWithWebhookSecret(
+        applicationId,
+        workspaceId,
+      );
+
+    if (!application) {
+      throw new AppError("Application not found.", 404, true);
+    }
+
+    if (!application.webhookUrl) {
+      throw new AppError("Configure a webhook URL first.", 400, true);
+    }
+
+    const { generateWebhookSecret, encryptWebhookSecret } =
+      await import("../../webhook/service/webhook-secret.service.js");
+
+    const signingSecret = generateWebhookSecret();
+
+    const updated = await applicationRepository.updateWebhookConfiguration(
+      workspaceId,
+      applicationId,
+      application.webhookUrl,
+      encryptWebhookSecret(signingSecret),
+    );
+
+    if (!updated) {
+      throw new AppError("Application not found.", 404, true);
+    }
+
+    return {
+      application: {
+        id: updated.id,
+        name: updated.name,
+        clientId: updated.clientId,
+        status: updated.status,
+        webhookUrl: updated.webhookUrl,
+        allowedOrigins: updated.allowedOrigins ?? [],
+        createdAt: updated.createdAt,
+        updatedAt: updated.updatedAt,
+      },
+      signingSecret,
+    };
+  }
+
   async updateWebhookConfiguration(
     workspaceId: string,
     applicationId: string,

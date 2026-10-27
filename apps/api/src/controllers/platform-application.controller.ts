@@ -178,3 +178,22 @@ export const updatePlatformApplicationWebhook = asyncHandler(
     });
   },
 );
+
+export const rotatePlatformApplicationWebhookSecret = asyncHandler(
+  async (req: Request<PlatformApplicationIdInput>, res: Response) => {
+    const workspace = await workspaceService.getWorkspaceByOwnerId(
+      req.platformAccount!.id,
+    );
+
+    const result = await applicationService.rotateWebhookSigningSecret(
+      workspace.id,
+      req.params.id,
+    );
+
+    return ApiResponse.success(res, {
+      statusCode: 200,
+      message: "Webhook signing secret rotated successfully.",
+      data: result,
+    });
+  },
+);

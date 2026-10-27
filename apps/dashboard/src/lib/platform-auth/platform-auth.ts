@@ -372,6 +372,26 @@ export async function updatePlatformApplicationWebhook(
   return response.data;
 }
 
+export async function rotatePlatformApplicationWebhookSecret(
+  applicationId: string,
+): Promise<{
+  application: PlatformApplication;
+  signingSecret: string;
+}> {
+  const response = await request<{
+    success: boolean;
+    message: string;
+    data: {
+      application: PlatformApplication;
+      signingSecret: string;
+    };
+  }>(`/platform/applications/${applicationId}/webhook/rotate-secret`, {
+    method: "POST",
+  });
+
+  return response.data;
+}
+
 export async function suspendPlatformApplication(
   applicationId: string,
 ): Promise<PlatformApplication> {

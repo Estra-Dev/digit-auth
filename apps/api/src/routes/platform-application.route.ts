@@ -6,6 +6,7 @@ import {
   getPlatformApplication,
   listPlatformApplications,
   rotatePlatformApplicationSecret,
+  rotatePlatformApplicationWebhookSecret,
   suspendPlatformApplication,
   updatePlatformApplicationOrigins,
   updatePlatformApplicationWebhook,
@@ -67,6 +68,12 @@ router.put(
   "/:id/webhook",
   validate(updatePlatformApplicationWebhookSchema),
   updatePlatformApplicationWebhook,
+);
+
+router.post(
+  "/:id/webhook/rotate-secret",
+  validate(platformApplicationIdSchema),
+  rotatePlatformApplicationWebhookSecret,
 );
 
 export default router;

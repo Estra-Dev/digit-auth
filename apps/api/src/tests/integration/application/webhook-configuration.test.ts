@@ -152,6 +152,74 @@ describe("Application webhook configuration", () => {
     expect(unchanged?.webhookUrl).toBeNull();
   });
 
+  it("rotates the signing secret and preserves the webhook URL", async () => {
+    const { workspace, application } = await createTestApplication();
+
+    const url = "https://example.com/webhooks/digit-auth";
+
+    const configured = await applicationService.updateWebhookConfiguration(
+      workspace.id,
+      application.id,
+      url,
+    );
+
+    const originalSecret = configured.webhook.signingSecret!;
+
+    const rotated = await applicationService.rotateWebhookSigningSecret(
+      workspace.id,
+      application.id,
+    );
+
+    expect(rotated.signingSecret).toBeTruthy();
+    expect(rotated.signingSecret).not.toBe(originalSecret);
+    expect(rotated.application.webhookUrl).toBe(url);
+
+    const stored = await Application.findById(application.id).select(
+      "+webhookSecretEncrypted",
+    );
+
+    expect(stored?.webhookUrl).toBe(url);
+    expect(stored?.webhookSecretEncrypted).toBeTruthy();
+    expect(stored?.webhookSecretEncrypted).not.toBe(rotated.signingSecret);
+    expect(decryptWebhookSecret(stored!.webhookSecretEncrypted!)).toBe(
+      rotated.signingSecret,
+    );
+  });
+
+  it("does not allow another workspace to rotate the signing secret", async () => {
+    const { workspace, application } = await createTestApplication();
+
+    const configured = await applicationService.updateWebhookConfiguration(
+      workspace.id,
+      application.id,
+      "https://example.com/webhooks/digit-auth",
+    );
+
+    const originalSecret = configured.webhook.signingSecret!;
+
+    const otherWorkspace = await workspaceRepository.create({
+      ownerId: new Types.ObjectId().toString(),
+      name: "Other Workspace",
+    });
+
+    await expect(
+      applicationService.rotateWebhookSigningSecret(
+        otherWorkspace.id,
+        application.id,
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 404,
+    });
+
+    const stored = await Application.findById(application.id).select(
+      "+webhookSecretEncrypted",
+    );
+
+    expect(decryptWebhookSecret(stored!.webhookSecretEncrypted!)).toBe(
+      originalSecret,
+    );
+  });
+
   it("returns 404 for a nonexistent application", async () => {
     const ownerId = new Types.ObjectId();
     const workspace = await workspaceRepository.create({
