@@ -41,6 +41,7 @@ import type { RefreshTokenInput } from "../validators/refresh-token.schema.js";
 import type { LogoutInput } from "../validators/logout.schema.js";
 import WebhookEvent from "../modules/webhook/model/webhook-event.model.js";
 import { Application } from "../modules/application/model/application.model.js";
+import { VerificationToken } from "../modules/auth/model/verification-token.model.js";
 
 export class AuthService {
   async register(
@@ -441,12 +442,59 @@ export class AuthService {
       throw new AppError("Invalid verification Token", 400, true);
     }
 
-    await userRepository.verifyUser(applicationId, verificationToken.userId);
+    const dbSession = await mongoose.startSession();
 
-    await verificationTokenRepository.deleteByIdInApplication(
-      applicationId,
-      verificationToken.id,
-    );
+    try {
+      await dbSession.withTransaction(async () => {
+        await userRepository.verifyUser(
+          applicationId,
+          verificationToken.userId,
+          dbSession,
+        );
+
+        const deletedToken = await VerificationToken.deleteOne({
+          _id: verificationToken._id,
+          applicationId,
+          userId: verificationToken.userId,
+        }).session(dbSession);
+
+        if (deletedToken.deletedCount !== 1) {
+          throw new AppError("Invalid verification Token", 400, true);
+        }
+
+        const applicationWithWebhook = await Application.findOne({
+          _id: applicationId,
+          webhookUrl: { $type: "string", $ne: "" },
+        })
+          .select("_id")
+          .session(dbSession)
+          .lean();
+
+        if (applicationWithWebhook) {
+          await WebhookEvent.create(
+            [
+              {
+                applicationId,
+                event: "user.email_verified",
+                resourceId: user._id,
+                payload: {
+                  id: user._id.toString(),
+                  applicationId: applicationId.toString(),
+                  firstName: user.firstName,
+                  lastName: user.lastName,
+                  email: user.email,
+                  emailVerified: true,
+                  emailVerifiedAt: new Date(),
+                },
+              },
+            ],
+            { session: dbSession },
+          );
+        }
+      });
+    } finally {
+      await dbSession.endSession();
+    }
 
     await securityEventService.log({
       applicationId,

@@ -2,7 +2,7 @@ import mongoose, { Schema, Types } from "mongoose";
 
 export interface WebhookEventDocument {
   applicationId: Types.ObjectId;
-  event: "user.created";
+  event: "user.created" | "user.email_verified";
   resourceId: Types.ObjectId;
   payload: Record<string, unknown>;
   status: "pending" | "processing" | "delivered" | "failed";
@@ -26,7 +26,7 @@ const webhookEventSchema = new Schema<WebhookEventDocument>(
     },
     event: {
       type: String,
-      enum: ["user.created"],
+      enum: ["user.created", "user.email_verified"],
       required: true,
     },
     resourceId: {

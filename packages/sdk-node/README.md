@@ -575,7 +575,7 @@ The SDK is an ES module package. In TypeScript applications, follow the module c
 
 Webhook signature verification is separate from the `@digit-auth/node` authentication middleware. Your webhook endpoint should verify the incoming request using the signing secret configured for the DigitAuth application.
 
-DigitAuth currently emits the `user.created` event when a user is registered for an application with a configured webhook URL.
+DigitAuth emits the `user.created` event when a user registers and the `user.email_verified` event when the user's email is successfully verified, provided the application has a configured webhook URL.
 
 ### Receiver requirements
 

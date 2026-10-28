@@ -3,18 +3,16 @@ import { Types } from "mongoose";
 import { describe, expect, it } from "vitest";
 
 import app from "../../helpers/app.js";
-
 import { ApplicationService } from "../../../modules/application/service/application.service.js";
-
 import { buildRegisterPayload } from "../../helpers/factories.js";
-
 import { User } from "../../../modules/auth/model/user.model.js";
+import WebhookEvent from "../../../modules/webhook/model/webhook-event.model.js";
 import { getTestWorkspace } from "../../helpers/workspace.helper.js";
 import { withApplicationCredentials } from "../../helpers/application-auth.helper.js";
 
 const applicationService = new ApplicationService();
 
-async function createTestApplication() {
+async function createTestApplication(webhookUrl?: string) {
   const workspace = await getTestWorkspace();
 
   const { application, credentials } =
@@ -22,6 +20,14 @@ async function createTestApplication() {
       workspace.id,
       "DigitAuth Test Application",
     );
+
+  if (webhookUrl) {
+    await applicationService.updateWebhookConfiguration(
+      workspace.id,
+      application.id,
+      webhookUrl,
+    );
+  }
 
   return {
     applicationId: new Types.ObjectId(application.id),
@@ -46,16 +52,13 @@ describe("POST /api/v1/auth/verify-email", () => {
     expect(registerResponse.status).toBe(201);
 
     const verificationToken = registerResponse.body.data.verificationToken;
-
     expect(verificationToken).toBeDefined();
 
     const response = await withApplicationCredentials(
       request(app).post("/api/v1/auth/verify-email"),
       clientId,
       clientSecret,
-    ).send({
-      token: verificationToken,
-    });
+    ).send({ token: verificationToken });
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
@@ -69,6 +72,64 @@ describe("POST /api/v1/auth/verify-email", () => {
     expect(verifiedUser!.emailVerified).toBe(true);
   });
 
+  it("should emit user.email_verified when email verification succeeds and a webhook is configured", async () => {
+    const { applicationId, clientId, clientSecret } =
+      await createTestApplication("https://example.com/webhooks");
+
+    const payload = buildRegisterPayload();
+
+    const registerResponse = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/register"),
+      clientId,
+      clientSecret,
+    ).send(payload);
+
+    expect(registerResponse.status).toBe(201);
+
+    const verificationToken = registerResponse.body.data.verificationToken;
+    expect(verificationToken).toBeDefined();
+
+    const user = await User.findOne({
+      applicationId,
+      email: payload.email,
+    });
+
+    expect(user).not.toBeNull();
+    expect(user!.emailVerified).toBe(false);
+
+    const response = await withApplicationCredentials(
+      request(app).post("/api/v1/auth/verify-email"),
+      clientId,
+      clientSecret,
+    ).send({ token: verificationToken });
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+
+    const verifiedUser = await User.findOne({
+      applicationId,
+      email: payload.email,
+    });
+
+    expect(verifiedUser).not.toBeNull();
+    expect(verifiedUser!.emailVerified).toBe(true);
+
+    const webhookEvent = await WebhookEvent.findOne({
+      applicationId,
+      event: "user.email_verified",
+      resourceId: user!._id,
+    });
+
+    expect(webhookEvent).not.toBeNull();
+    expect(webhookEvent!.status).toBe("pending");
+    expect(webhookEvent!.payload.id).toBe(user!._id.toString());
+    expect(webhookEvent!.payload.applicationId).toBe(applicationId.toString());
+    expect(webhookEvent!.payload.email).toBe(payload.email);
+    expect(webhookEvent!.payload.emailVerified).toBe(true);
+    expect(webhookEvent!.payload).not.toHaveProperty("password");
+    expect(webhookEvent!.payload).not.toHaveProperty("passwordHashed");
+  });
+
   it("should reject invalid token", async () => {
     const { clientId, clientSecret } = await createTestApplication();
 
@@ -76,9 +137,7 @@ describe("POST /api/v1/auth/verify-email", () => {
       request(app).post("/api/v1/auth/verify-email"),
       clientId,
       clientSecret,
-    ).send({
-      token: "invalid-token",
-    });
+    ).send({ token: "invalid-token" });
 
     expect(response.status).toBe(400);
     expect(response.body.success).toBe(false);
