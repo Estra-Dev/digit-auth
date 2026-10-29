@@ -73,15 +73,17 @@ app.listen(3001, () => {
   console.log("Application running on port 3001");
 });`;
 
-const envExample = `# React + Next.js client configuration
+const envExample = `# Next.js client configuration
 NEXT_PUBLIC_DIGIT_AUTH_API_URL=https://digit-auth.onrender.com/api/v1
 NEXT_PUBLIC_DIGIT_AUTH_PUBLISHABLE_KEY=your_publishable_key
 
-# Server-side Node.js configuration
+# Node.js server configuration
 DIGIT_AUTH_API_URL=https://digit-auth.onrender.com/api/v1
 DIGIT_AUTH_CLIENT_ID=your_digit_auth_client_id
 DIGIT_AUTH_CLIENT_SECRET=your_digit_auth_client_secret
-WEBHOOK_ENCRYPTION_KEY=replace_with_base64_encoded_32_byte_key`;
+
+# DigitAuth API deployment only
+WEBHOOK_ENCRYPTION_KEY=base64_encoded_32_byte_key`;
 
 const steps = [
   {
@@ -94,13 +96,13 @@ const steps = [
     number: "02",
     title: "Configure your environment",
     description:
-      "Copy the application's publishable key into your React environment. Configure the API URL for your environment.",
+      "Copy the application's publishable key into your client environment and configure the API URL.",
   },
   {
     number: "03",
     title: "Install an SDK",
     description:
-      "Use the React SDK for ready-made authentication and profile interfaces, or the Node SDK to protect Express API routes.",
+      "Use the React SDK for authentication components or the Node SDK to protect Express API routes.",
   },
   {
     number: "04",
@@ -112,7 +114,7 @@ const steps = [
     number: "05",
     title: "Test your integration",
     description:
-      "Test registration, sign-in, sign-out, protected routes, verification, profile management, and recovery flows against your configured API.",
+      "Test registration, sign-in, sign-out, protected routes, verification, profile management, and recovery flows.",
   },
 ];
 
@@ -201,7 +203,7 @@ function NumberedStep({
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-blue-400/20 bg-blue-500/10 text-xs font-semibold text-blue-500">
         {number}
       </div>
-      <div>
+      <div className="min-w-0">
         <h3 className="text-sm font-semibold text-[var(--site-text)]">
           {title}
         </h3>
@@ -233,6 +235,7 @@ export default function GettingStartedPage() {
             aria-hidden="true"
             className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl"
           />
+
           <div className="relative max-w-3xl">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-500">
               <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
@@ -284,7 +287,7 @@ export default function GettingStartedPage() {
               Development release
             </h2>
             <p className="mt-1 text-sm leading-6 text-[var(--site-muted)]">
-              DigitAuth is actively under development. Validate the security,
+              DigitAuth is actively under development. Validate security,
               session-storage, and deployment requirements before using it with
               real users.
             </p>
@@ -302,6 +305,7 @@ export default function GettingStartedPage() {
             {steps.map((step) => (
               <NumberedStep key={step.number} {...step} />
             ))}
+
             <div className="flex flex-col justify-center rounded-xl border border-dashed border-blue-400/30 p-4">
               <p className="text-sm font-semibold text-[var(--site-text)]">
                 Ready to configure your app?
@@ -334,9 +338,9 @@ export default function GettingStartedPage() {
               <code>pnpm add @digit-auth/react@0.1.4</code>
             </pre>
             <p className="mt-3 text-sm leading-6 text-[var(--site-muted)]">
-              The current UI components include SignIn, SignUp, SignedIn,
-              SignedOut, UserButton, and UserProfile. AuthProvider supplies the
-              authentication context, while useAuth supports custom flows.
+              The SDK exports SignIn, SignUp, SignedIn, SignedOut, UserButton,
+              UserProfile, AuthProvider, and useAuth. AuthProvider supplies the
+              authentication context; useAuth lets you build custom flows.
             </p>
           </div>
 
@@ -346,39 +350,38 @@ export default function GettingStartedPage() {
                 Ready-made authentication
               </h3>
               <p className="mt-2 text-sm leading-6 text-[var(--site-muted)]">
-                Use SignIn and SignUp for the authentication screens, and
-                SignedIn and SignedOut to conditionally render content.
+                Use SignIn and SignUp for authentication screens, and SignedIn
+                and SignedOut to conditionally render content.
               </p>
             </div>
+
             <div className="rounded-xl border border-[var(--site-border)] p-4">
               <h3 className="text-sm font-semibold text-[var(--site-text)]">
                 Account UI
               </h3>
               <p className="mt-2 text-sm leading-6 text-[var(--site-muted)]">
                 Use UserButton for the user menu and UserProfile for the profile
-                interface. Configure userProfileUrl to match your applications
-                profile route when needed.
+                interface. Configure userProfileUrl to match your application's
+                profile route.
               </p>
             </div>
           </div>
 
           <div className="mb-4 rounded-2xl border border-[var(--site-border)] bg-[var(--site-surface)] p-5">
             <h3 className="text-sm font-semibold text-[var(--site-text)]">
-              Automatic email verification
+              Email verification
             </h3>
             <p className="mt-2 text-sm leading-6 text-[var(--site-muted)]">
-              The React SDK automatically handles email verification when a user
-              opens a verification link containing a token in the applications
-              URL. It verifies the token through the DigitAuth API, removes the
-              token from the URL, and displays the appropriate loading, success,
-              or error screen. For the standard flow, you do not need to build a
-              separate verification page or manually call verifyEmail().
+              Configure the verification URL to point to the correct application
+              origin, and ensure the browser can reach your configured DigitAuth
+              API. Before relying on automatic verification handling, confirm
+              the behavior supported by the exact SDK version you have
+              installed.
             </p>
             <p className="mt-2 text-sm leading-6 text-[var(--site-muted)]">
-              Make sure your applications verification link points to the
-              correct application origin and that the browser can reach your
-              configured DigitAuth API. Custom verification flows can use the
-              SDKs verification methods when needed.
+              For a custom flow, consult the installed SDK's exports and README
+              before calling verification methods. Do not assume a verification
+              page or helper is available unless your SDK version documents it.
             </p>
           </div>
 
@@ -389,10 +392,10 @@ export default function GettingStartedPage() {
           />
 
           <p className="mt-3 text-xs leading-5 text-[var(--site-muted)]">
-            This example illustrates the component integration. In a real
-            application, present the sign-in and sign-up screens according to
-            your navigation, and make sure the profile URL matches your routes.
-            The publishable key is intended for client-side configuration; never
+            This example illustrates component integration. In a real
+            application, place sign-in and sign-up screens according to your
+            navigation, and ensure the profile URL matches your routes. The
+            publishable key is intended for client-side configuration; never
             expose private server credentials.
           </p>
         </section>
@@ -420,9 +423,9 @@ export default function GettingStartedPage() {
           />
 
           <p className="mt-3 text-xs leading-5 text-[var(--site-muted)]">
-            Confirm the Node SDK package and API signatures are available in
-            your target release. Your application must still enforce its own
-            business rules and resource-access policies.
+            Keep the client ID and client secret on the server. Authentication
+            confirms the identity associated with a request; your application
+            must still enforce authorization and resource-access policies.
           </p>
         </section>
 
@@ -445,21 +448,30 @@ export default function GettingStartedPage() {
                 React publishable key
               </h3>
               <p className="mt-2 text-sm leading-6 text-[var(--site-muted)]">
-                Vite variables must use the VITE_ prefix, while Next.js client
-                variables use NEXT_PUBLIC_. These values are exposed to the
-                browser and should contain only public configuration.
+                Vite client variables use the VITE_ prefix, while Next.js client
+                variables use NEXT_PUBLIC_. Values exposed to the browser must
+                contain only public configuration.
               </p>
             </div>
+
             <div className="rounded-xl border border-[var(--site-border)] p-4">
               <h3 className="text-sm font-semibold text-[var(--site-text)]">
                 Server credentials
               </h3>
               <p className="mt-2 text-sm leading-6 text-[var(--site-muted)]">
-                Keep private credentials on the server, out of Git, browser
-                bundles, screenshots, and logs.
+                Keep private credentials on trusted servers, out of Git, browser
+                bundles, screenshots, and logs. Set each variable only in the
+                service that needs it.
               </p>
             </div>
           </div>
+
+          <p className="mt-3 text-xs leading-5 text-[var(--site-muted)]">
+            WEBHOOK_ENCRYPTION_KEY is configuration for the DigitAuth API
+            deployment. It must be a base64-encoded 32-byte key. Do not put this
+            key in your frontend environment or use it as a webhook signing
+            secret.
+          </p>
         </section>
 
         <section className="mb-12">
@@ -478,12 +490,13 @@ export default function GettingStartedPage() {
               <li>
                 Open your application and configure its webhook endpoint URL.
               </li>
-              <li>Store the signing secret securely when it is generated.</li>
+              <li>Store the application's webhook signing secret securely.</li>
               <li>
-                Set WEBHOOK_ENCRYPTION_KEY in the API deployment environment.
+                Ensure WEBHOOK_ENCRYPTION_KEY is configured in the DigitAuth API
+                deployment.
               </li>
               <li>
-                Register a new user and check your endpoint for the user.created
+                Register a user and check your endpoint for the user.created
                 event.
               </li>
             </ol>
@@ -493,16 +506,36 @@ export default function GettingStartedPage() {
             </h3>
 
             <p className="mt-2 text-sm leading-6 text-[var(--site-muted)]">
-              DigitAuth signs the timestamp and exact raw request body using
-              HMAC-SHA256. Verify the digitauth-signature header against your
-              application's signing secret before processing the JSON payload.
-              Compare signatures in constant time and reject stale timestamps.
+              DigitAuth signs the timestamp and exact request body using
+              HMAC-SHA256. The digitauth-signature header contains a value
+              formatted as sha256 followed by the hexadecimal digest. The signed
+              message is the timestamp, a period, and the exact raw request
+              body. The timestamp is provided in digitauth-timestamp.
             </p>
 
             <p className="mt-3 text-sm leading-6 text-[var(--site-muted)]">
-              Delivery uses a 10-second timeout and retries failures up to eight
-              attempts. Redirects are not followed, and the receiver should
-              return a 2xx response after accepting an event.
+              Verify the signature on your server using the application's
+              webhook signing secret and the original raw request body, before
+              parsing or processing the event. Use a constant-time comparison
+              where applicable. The timestamp is part of the signed message;
+              implement an explicit timestamp-age policy in your receiver if you
+              need one.
+            </p>
+
+            <p className="mt-3 text-sm leading-6 text-[var(--site-muted)]">
+              DigitAuth retries unsuccessful deliveries with exponential
+              backoff, starting at one second and capped at one hour, for up to
+              eight attempts. Redirect responses are treated as failures. Return
+              a 2xx status after accepting an event, and make event processing
+              idempotent so a repeated delivery does not duplicate your
+              application's work.
+            </p>
+
+            <p className="mt-3 text-sm leading-6 text-[var(--site-muted)]">
+              The supported event names shown in the current API source include
+              user.created and user.email_verified. Check your application's
+              webhook configuration and current API implementation before
+              depending on a particular event payload.
             </p>
           </div>
         </section>
