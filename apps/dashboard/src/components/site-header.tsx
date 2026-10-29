@@ -7,6 +7,7 @@ import DigitAuthLogo from "@/components/digit-auth-logo";
 const navigation = [
   { label: "Features", href: "/#features" },
   { label: "Developers", href: "/#developers" },
+  { label: "Docs", href: "/docs" },
   { label: "Platform", href: "/platform/login" },
 ];
 

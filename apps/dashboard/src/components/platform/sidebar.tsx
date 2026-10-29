@@ -46,6 +46,14 @@ const navigation = [
       <path d="M12 18h.01M9.09 9a3 3 0 1 1 5.82 1c-.9.6-2.91 1.3-2.91 3M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z" />
     ),
   },
+
+  {
+    name: "Webhooks",
+    href: "/platform/webhooks",
+    icon: (
+      <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
+    ),
+  },
 ];
 
 type PlatformSidebarProps = {
