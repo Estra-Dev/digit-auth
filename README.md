@@ -56,7 +56,7 @@ Or using npm:
 npm install @digit-auth/react
 ```
 
-**Version note:** The current repository source declares `@digit-auth/react` version `0.1.4`. The published npm version was previously observed to lag behind that source. Check the registry before integrating the current API into a separate application:
+**Version note:** The current published React SDK version is `@digit-auth/react@0.1.6`. Install it with `pnpm add @digit-auth/react@0.1.6`.. The published npm version was previously observed to lag behind that source. Check the registry before integrating the current API into a separate application:
 
 ```bash
 pnpm view @digit-auth/react version
@@ -97,7 +97,11 @@ export function AppProviders({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthProvider apiUrl={apiUrl} publishableKey={publishableKey}>
+    <AuthProvider
+      apiUrl={apiUrl}
+      publishableKey={publishableKey}
+      passwordResetPath="/reset-password"
+    >
       {children}
     </AuthProvider>
   );
@@ -110,7 +114,7 @@ The SDK sends the publishable key using the `X-DigitAuth-Publishable-Key` reques
 
 ### 5. Use the ready-made authentication components
 
-The current SDK exports `SignIn`, `SignUp`, `SignedIn`, `SignedOut`, `ProtectedRoute`, `SignOutButton`, `UserButton`, and `UserProfile`.
+The current SDK exports `SignIn`, `SignUp`, `SignedIn`, `SignedOut`, `ProtectedRoute`, `SignOutButton`, `UserButton`, `UserProfile`, `ForgotPassword`, and `ResetPassword`.
 
 ```tsx
 import {
@@ -120,6 +124,8 @@ import {
   SignedOut,
   UserButton,
   UserProfile,
+  ForgotPassword,
+  ResetPassword,
 } from "@digit-auth/react";
 
 export function AccountPage() {
@@ -144,6 +150,65 @@ This example renders the sign-in and sign-up experiences for signed-out users an
 The `UserButton` also supports `showEmail` and `userProfileUrl` props. `UserProfile` supports configuration for its profile, password, and account-deletion sections.
 
 Check the component definitions in `packages/sdk-react/src/components/` for their current props and behavior.
+
+## Password recovery
+
+DigitAuth provides ready-made `ForgotPassword` and `ResetPassword` components for implementing password recovery in your application.
+
+### 1. Create the forgot-password page
+
+Create `app/forgot-password/page.tsx`:
+
+```tsx
+import { ForgotPassword } from "@digit-auth/react";
+
+export default function ForgotPasswordPage() {
+  return <ForgotPassword />;
+}
+```
+
+The component allows users to request a password-reset email. Its success message is intentionally generic so the interface does not reveal whether an email address belongs to a registered account.
+
+### 2. Create the reset-password page
+
+Create `app/reset-password/page.tsx`:
+
+```tsx
+import { ResetPassword } from "@digit-auth/react";
+
+export default function ResetPasswordPage() {
+  return <ResetPassword />;
+}
+```
+
+The component reads the reset token from the URL, validates the new password and confirmation, and submits the reset request to the DigitAuth API.
+
+### 3. Configure the reset path
+
+Set `passwordResetPath` on your `AuthProvider` to the exact pathname where the `ResetPassword` component is rendered:
+
+```tsx
+<AuthProvider
+  apiUrl={apiUrl}
+  publishableKey={publishableKey}
+  passwordResetPath="/reset-password"
+>
+  {children}
+</AuthProvider>
+```
+
+The configured path must match your reset page route. The default is `/reset-password`, so you can omit this property when using that route.
+
+### 4. Test the recovery flow
+
+1. Register an application user and verify the email address.
+2. Open the forgot-password page.
+3. Submit the registered email address.
+4. Open the password-reset link received by email.
+5. Enter and confirm a new password.
+6. Sign in using the new password.
+
+Keep the reset token private. Do not log it, expose it unnecessarily, or reuse it after a successful password reset.
 
 ## Custom authentication with `useAuth()`
 
@@ -329,7 +394,11 @@ export function DigitAuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthProvider apiUrl={apiUrl} publishableKey={publishableKey}>
+    <AuthProvider
+      apiUrl={apiUrl}
+      publishableKey={publishableKey}
+      passwordResetPath="/reset-password"
+    >
       {children}
     </AuthProvider>
   );
@@ -351,18 +420,18 @@ DigitAuth provides a separate Node.js SDK for integrating authentication and aut
 
 ### Installation
 
-The repository's current Node SDK package version is `0.1.0`.
+The repository's current Node SDK package version is `0.1.1`.
 
 Using pnpm:
 
 ```bash
-pnpm add @digit-auth/node@0.1.0 express
+pnpm add @digit-auth/node@0.1.1 express
 ```
 
 Or using npm:
 
 ```bash
-npm install @digit-auth/node@0.1.0 express
+npm install @digit-auth/node@0.1.1 express
 ```
 
 Check published versions before upgrading:
@@ -446,7 +515,7 @@ For full installation instructions, middleware examples, error handling, and sec
 
 ## Webhooks
 
-DigitAuth can send HTTP webhook events to your application when supported events occur. The current event is `user.created`.
+DigitAuth can send HTTP webhook events to your application when supported events occur. Supported events include `user.created` and `user.email_verified`.
 
 ### Configure webhooks
 
@@ -465,7 +534,7 @@ Set the generated value in the API environment. Do not commit it or share it pub
 
 ### Webhook delivery
 
-When a user is registered for an application with a configured webhook URL, DigitAuth records a `user.created` event and processes it asynchronously.
+When a user is registered for an application with a configured webhook URL, DigitAuth records supported events such as `user.created` and `user.email_verified` and processes them asynchronously.
 
 Webhook requests include:
 

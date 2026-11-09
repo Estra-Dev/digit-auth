@@ -583,6 +583,7 @@ export class AuthService {
       firstName: string;
       email: string;
     },
+    applicationOrigin?: string,
   ): Promise<string> {
     const resetToken = tokenService.generatePasswordResetToken();
 
@@ -602,29 +603,44 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         resetToken,
+        applicationOrigin,
       });
     } catch (error) {
+      // Invalidate the reset token if email delivery fails.
+      await passwordResetTokenRepository.deleteByUserId(
+        applicationId,
+        user._id,
+      );
+
       logger.error(
         {
           error,
           userId: user._id.toString(),
           email: user.email,
         },
-        "Failed to send password resend email",
+        "Failed to send password reset email",
       );
     }
 
     return resetToken;
   }
 
-  async forgotPassword(applicationId: Types.ObjectId, email: string) {
+  async forgotPassword(
+    applicationId: Types.ObjectId,
+    email: string,
+    applicationOrigin?: string,
+  ) {
     const user = await userRepository.findByEmail(applicationId, email);
 
     if (!user) {
       return config.isTest ? { resetToken: null } : undefined;
     }
 
-    const resetToken = await this.sendPasswordResetEmail(applicationId, user);
+    const resetToken = await this.sendPasswordResetEmail(
+      applicationId,
+      user,
+      applicationOrigin,
+    );
 
     await securityEventService.log({
       applicationId,

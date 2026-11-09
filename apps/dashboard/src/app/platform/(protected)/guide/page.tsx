@@ -8,6 +8,8 @@ const reactExample = `import {
   SignedOut,
   UserButton,
   UserProfile,
+  ForgotPassword,
+  ResetPassword,
   useAuth,
 } from "@digit-auth/react";
 
@@ -18,6 +20,7 @@ export default function App() {
       publishableKey={
         process.env.NEXT_PUBLIC_DIGIT_AUTH_PUBLISHABLE_KEY!
       }
+      passwordResetPath="/reset-password"
     >
       <SignedOut>
         <SignIn />
@@ -96,7 +99,7 @@ const steps = [
     number: "02",
     title: "Configure your environment",
     description:
-      "Copy the application's publishable key into your client environment and configure the API URL.",
+      "Copy the application&apos; publishable key into your client environment and configure the API URL.",
   },
   {
     number: "03",
@@ -118,17 +121,6 @@ const steps = [
   },
 ];
 
-const authRoutes = [
-  ["Registration", "POST", "/auth/register"],
-  ["Sign in", "POST", "/auth/login"],
-  ["Refresh tokens", "POST", "/auth/refresh"],
-  ["Sign out", "POST", "/auth/logout"],
-  ["Current user", "GET", "/auth/me"],
-  ["Email verification", "POST", "/auth/verify-email"],
-  ["Forgot password", "POST", "/auth/forgot-password"],
-  ["Reset password", "POST", "/auth/reset-password"],
-  ["Session list", "GET", "/auth/sessions"],
-];
 
 const checklist = [
   "Confirm the API URL and application configuration.",
@@ -335,11 +327,13 @@ export default function GettingStartedPage() {
               Install the package
             </h3>
             <pre className="mt-3 overflow-x-auto rounded-xl border border-[var(--site-border)] bg-[var(--site-bg)] p-4 text-sm text-[var(--site-text)]">
-              <code>pnpm add @digit-auth/react@0.1.4</code>
+              <code>pnpm add @digit-auth/react@0.1.6</code>
             </pre>
             <p className="mt-3 text-sm leading-6 text-[var(--site-muted)]">
               The SDK exports SignIn, SignUp, SignedIn, SignedOut, UserButton,
-              UserProfile, AuthProvider, and useAuth. AuthProvider supplies the
+              UserProfile, ForgotPassword, ResetPassword, AuthProvider, and useAuth. AuthProvider supplies the
+  ForgotPassword,
+  ResetPassword,
               authentication context; useAuth lets you build custom flows.
             </p>
           </div>
@@ -361,7 +355,7 @@ export default function GettingStartedPage() {
               </h3>
               <p className="mt-2 text-sm leading-6 text-[var(--site-muted)]">
                 Use UserButton for the user menu and UserProfile for the profile
-                interface. Configure userProfileUrl to match your application's
+                interface. Configure userProfileUrl to match your application&apos;
                 profile route.
               </p>
             </div>
@@ -379,7 +373,7 @@ export default function GettingStartedPage() {
               installed.
             </p>
             <p className="mt-2 text-sm leading-6 text-[var(--site-muted)]">
-              For a custom flow, consult the installed SDK's exports and README
+              For a custom flow, consult the installed SDK&apos; exports and README
               before calling verification methods. Do not assume a verification
               page or helper is available unless your SDK version documents it.
             </p>
@@ -490,7 +484,7 @@ export default function GettingStartedPage() {
               <li>
                 Open your application and configure its webhook endpoint URL.
               </li>
-              <li>Store the application's webhook signing secret securely.</li>
+              <li>Store the application&apos; webhook signing secret securely.</li>
               <li>
                 Ensure WEBHOOK_ENCRYPTION_KEY is configured in the DigitAuth API
                 deployment.
@@ -514,7 +508,7 @@ export default function GettingStartedPage() {
             </p>
 
             <p className="mt-3 text-sm leading-6 text-[var(--site-muted)]">
-              Verify the signature on your server using the application's
+              Verify the signature on your server using the application&apos;
               webhook signing secret and the original raw request body, before
               parsing or processing the event. Use a constant-time comparison
               where applicable. The timestamp is part of the signed message;
@@ -528,12 +522,12 @@ export default function GettingStartedPage() {
               eight attempts. Redirect responses are treated as failures. Return
               a 2xx status after accepting an event, and make event processing
               idempotent so a repeated delivery does not duplicate your
-              application's work.
+              application&apos; work.
             </p>
 
             <p className="mt-3 text-sm leading-6 text-[var(--site-muted)]">
               The supported event names shown in the current API source include
-              user.created and user.email_verified. Check your application's
+              user.created and user.email_verified. Check your application&apos;
               webhook configuration and current API implementation before
               depending on a particular event payload.
             </p>

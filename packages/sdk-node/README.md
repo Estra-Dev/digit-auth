@@ -30,22 +30,22 @@ You can use the SDK in a separate application or backend. Your application does 
 
 ### Install the published package
 
-Install the current published version, `0.1.0`, using pnpm:
+Install the workspace version, `0.1.1`, using pnpm:
 
 ```bash
-pnpm add @digit-auth/node@0.1.0 express
+pnpm add @digit-auth/node@0.1.1 express
 ```
 
 Or using npm:
 
 ```bash
-npm install @digit-auth/node@0.1.0 express
+npm install @digit-auth/node@0.1.1 express
 ```
 
 Or using Yarn:
 
 ```bash
-yarn add @digit-auth/node@0.1.0 express
+yarn add @digit-auth/node@0.1.1 express
 ```
 
 Pinning the version makes the example reproducible. To check which versions are published, run:
@@ -562,7 +562,7 @@ pnpm view @digit-auth/node versions
 If you need a specific version, install it explicitly:
 
 ```bash
-pnpm add @digit-auth/node@0.1.0
+pnpm add @digit-auth/node@0.1.1
 ```
 
 ### TypeScript errors

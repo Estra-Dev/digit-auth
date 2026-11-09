@@ -36,6 +36,7 @@ export default function Providers({
       publishableKey={
         process.env.NEXT_PUBLIC_DIGIT_AUTH_PUBLISHABLE_KEY!
       }
+      passwordResetPath="/reset-password"
     >
       {children}
     </AuthProvider>
@@ -51,9 +52,9 @@ export default function Providers({
     code: `import { useAuth } from "@digit-auth/react";
 
 export function AccountStatus() {
-  const { isSignedIn, user } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
-  if (!isSignedIn) {
+  if (!isAuthenticated) {
     return <p>Sign in to continue.</p>;
   }
 
@@ -61,8 +62,29 @@ export function AccountStatus() {
 }`,
   },
   {
-    id: "webhooks",
+    id: "password-recovery",
     number: "05",
+    title: "Add password recovery",
+    description:
+      "Use ForgotPassword and ResetPassword to let users request a password-reset link and securely choose a new password.",
+    code: `import {
+      ForgotPassword,
+      ResetPassword,
+    } from "@digit-auth/react";
+
+    // app/forgot-password/page.tsx
+    export default function ForgotPasswordPage() {
+      return <ForgotPassword />;
+    }
+
+    // app/reset-password/page.tsx
+    export default function ResetPasswordPage() {
+      return <ResetPassword />;
+    }`,
+  },
+  {
+    id: "webhooks",
+    number: "06",
     title: "React to authentication events",
     description:
       "DigitAuth supports the user.created and user.email_verified webhook events. Configure an endpoint in your platform dashboard, verify webhook signatures on your server, and handle repeated deliveries safely.",
@@ -165,7 +187,7 @@ export default function DocsPage() {
 
                         <p className="mt-2 text-sm leading-6 text-[var(--site-muted)]">
                           Configure these variables in your Next.js
-                          application's environment settings.
+                          application&apos;s environment settings.
                         </p>
 
                         <div className="mt-3">
@@ -174,8 +196,8 @@ NEXT_PUBLIC_DIGIT_AUTH_PUBLISHABLE_KEY=your_publishable_key`}</CodeBlock>
                         </div>
 
                         <p className="mt-3 text-xs leading-5 text-[var(--site-muted)]">
-                          Use your application's actual publishable key. Never
-                          expose your client secret in browser-side code.
+                          Use your application&apos;s actual publishable key.
+                          Never expose your client secret in browser-side code.
                         </p>
                       </div>
                     )}
@@ -187,7 +209,7 @@ NEXT_PUBLIC_DIGIT_AUTH_PUBLISHABLE_KEY=your_publishable_key`}</CodeBlock>
                         </h3>
 
                         <p className="mt-2 text-sm leading-6 text-[var(--site-muted)]">
-                          Check the installed SDK's exported types and
+                          Check the installed SDK&apos;s exported types and
                           documentation to confirm the available hooks,
                           components, and return fields before using this
                           example in production.

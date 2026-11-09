@@ -1,5 +1,7 @@
 # @digit-auth/react
 
+**Workspace version: `0.1.6`**
+
 The React SDK for integrating DigitAuth authentication into React and Next.js applications.
 
 It provides authentication state, ready-made UI components, protected UI helpers, and methods for implementing custom authentication and account-management experiences.
@@ -9,20 +11,23 @@ It provides authentication state, ready-made UI components, protected UI helpers
 ## Requirements
 
 - React 19 or newer
+- Node.js 20 or newer for development and builds
 - A running DigitAuth API
 - A publishable key created for your DigitAuth application
 
 ## Installation
 
 ```bash
-npm install @digit-auth/react
+pnpm add @digit-auth/react@0.1.6
 ```
 
 Or:
 
 ```bash
-pnpm add @digit-auth/react
+npm install @digit-auth/react@0.1.6
 ```
+
+> This version must be published to npm before it can be installed from the public registry. For development inside the DigitAuth monorepo, use the workspace package.
 
 ## 1. Configure the provider
 
@@ -51,7 +56,7 @@ If `apiUrl` is omitted, the SDK defaults to:
 http://localhost:5000/api/v1
 ```
 
-For Vite, you can read the configuration from environment variables:
+For Vite, read configuration from environment variables:
 
 ```tsx
 <AuthProvider
@@ -62,7 +67,48 @@ For Vite, you can read the configuration from environment variables:
 </AuthProvider>
 ```
 
-Do not put private credentials in browser-accessible environment variables.
+For Next.js:
+
+```tsx
+<AuthProvider
+  apiUrl={process.env.NEXT_PUBLIC_DIGIT_AUTH_API_URL}
+  publishableKey={process.env.NEXT_PUBLIC_DIGIT_AUTH_PUBLISHABLE_KEY!}
+>
+  {children}
+</AuthProvider>
+```
+
+Do not put private credentials in browser-accessible environment variables. A publishable key is intended for client-side configuration; client secrets must remain on trusted servers.
+
+### Configure the password reset route
+
+The provider supports `passwordResetPath`, which tells the SDK which application pathname is used for password reset. Its default is `/reset-password`.
+
+```tsx
+<AuthProvider
+  apiUrl={process.env.NEXT_PUBLIC_DIGIT_AUTH_API_URL}
+  publishableKey={process.env.NEXT_PUBLIC_DIGIT_AUTH_PUBLISHABLE_KEY!}
+  passwordResetPath="/reset-password"
+>
+  {children}
+</AuthProvider>
+```
+
+If your reset page uses a different pathname, configure that exact pathname:
+
+```tsx
+<AuthProvider
+  apiUrl={process.env.NEXT_PUBLIC_DIGIT_AUTH_API_URL}
+  publishableKey={process.env.NEXT_PUBLIC_DIGIT_AUTH_PUBLISHABLE_KEY!}
+  passwordResetPath="/account/recover"
+>
+  {children}
+</AuthProvider>
+```
+
+The configured path must match the route rendering `ResetPassword`. Use the pathname only, without a query string or reset token.
+
+This setting prevents the password reset token in `?token=...` from being mistaken for an email verification token.
 
 ## 2. Use the ready-made UI components
 
@@ -154,7 +200,109 @@ export function LogoutControl() {
 
 The component prevents repeated sign-out requests while a sign-out operation is in progress.
 
-## Email verification
+## 3. Password recovery
+
+The React SDK exports two ready-made components for password recovery:
+
+- `ForgotPassword` requests a password reset email.
+- `ResetPassword` allows the user to set a new password using the token in the reset URL.
+
+### Forgot password page
+
+```tsx
+import { ForgotPassword } from "@digit-auth/react";
+
+export default function ForgotPasswordPage() {
+  return <ForgotPassword />;
+}
+```
+
+The component accepts these props:
+
+| Prop        | Description                                               |
+| ----------- | --------------------------------------------------------- |
+| `signInUrl` | Destination for the sign-in link. Defaults to `/sign-in`. |
+| `onSuccess` | Optional callback after the request succeeds.             |
+| `className` | Optional CSS class for the component wrapper.             |
+
+The component sends the entered email address through `useAuth().forgotPassword()`.
+
+Its success message is intentionally generic. It does not reveal whether an account exists for the submitted email address.
+
+### Reset password page
+
+```tsx
+import { ResetPassword } from "@digit-auth/react";
+
+export default function ResetPasswordPage() {
+  return <ResetPassword />;
+}
+```
+
+The component reads the reset token from the URL query parameter:
+
+```text
+/reset-password?token=YOUR_PASSWORD_RESET_TOKEN
+```
+
+It validates that the password and confirmation match, requires a password of at least eight characters, and submits the reset request through `useAuth().resetPassword()`.
+
+The component accepts these props:
+
+| Prop                | Description                                                                    |
+| ------------------- | ------------------------------------------------------------------------------ |
+| `signInUrl`         | Destination after successful reset. Defaults to `/sign-in`.                    |
+| `forgotPasswordUrl` | Destination for requesting another reset link. Defaults to `/forgot-password`. |
+| `onSuccess`         | Optional callback after a successful reset.                                    |
+| `className`         | Optional CSS class for the component wrapper.                                  |
+
+### Example application routes
+
+For a Next.js App Router application, create these pages:
+
+```text
+app/
+├── sign-in/
+│   └── page.tsx
+├── forgot-password/
+│   └── page.tsx
+└── reset-password/
+    └── page.tsx
+```
+
+The forgot password page:
+
+```tsx
+import { ForgotPassword } from "@digit-auth/react";
+
+export default function ForgotPasswordPage() {
+  return <ForgotPassword signInUrl="/sign-in" />;
+}
+```
+
+The reset password page:
+
+```tsx
+import { ResetPassword } from "@digit-auth/react";
+
+export default function ResetPasswordPage() {
+  return (
+    <ResetPassword signInUrl="/sign-in" forgotPasswordUrl="/forgot-password" />
+  );
+}
+```
+
+Make sure the `AuthProvider` is configured with:
+
+```tsx
+passwordResetPath = "/reset-password";
+```
+
+The application's frontend origin must be registered in its DigitAuth allowed origins. The API uses the registered application origin when constructing the password reset link sent by email.
+
+A reset token is temporary and must be treated as sensitive. Do not expose it in application logs or share it with other services.
+
+## 4. Email verification
 
 Email verification is handled automatically by `AuthProvider`.
 
@@ -172,7 +320,7 @@ Ensure that your application's configured origin is the destination used in its 
 
 For advanced integrations, `useAuth()` also exposes `verifyEmail(token)` and `resendVerificationEmail(email)` for explicit control over verification actions.
 
-## 3. Build a custom authentication interface
+## 5. Build a custom authentication interface
 
 Use `useAuth()` when you need more control over your application's interface.
 
@@ -204,9 +352,23 @@ export function AccountSummary() {
 
 Call `useAuth()` only within a component rendered underneath `AuthProvider`.
 
-The current SDK exposes authentication and account-management actions, including methods for refreshing the user, updating the profile, changing the password, and deleting the account. Check `src/lib/auth/auth-context.tsx` for their exact signatures and behavior.
+The authentication context exposes authentication and account-management actions, including methods for:
 
-## 4. Protect authenticated UI
+- Signing in and signing up.
+- Signing out.
+- Refreshing authentication state.
+- Retrieving the current user.
+- Updating the user profile.
+- Changing the password.
+- Deleting the account.
+- Verifying an email address.
+- Resending an email verification message.
+- Requesting a password reset.
+- Resetting a password.
+
+Check `src/lib/auth/auth-context.tsx` for the exact method signatures and behavior.
+
+## 6. Protect authenticated UI
 
 Use `ProtectedRoute` when content should only be rendered for authenticated users.
 
@@ -229,7 +391,7 @@ export function PrivatePage() {
 
 These UI helpers do not replace server-side authorization. Your backend must verify requests and enforce access rules independently.
 
-## 5. API client
+## 7. API client
 
 The SDK exposes `createApiClient()` for making requests to the DigitAuth API.
 
@@ -266,15 +428,27 @@ try {
 }
 ```
 
-## 6. Authentication service
+## 8. Authentication service
 
 The SDK also exports `createAuthService()` for integrations that need direct access to the authentication service rather than React hooks and components.
 
 For most React applications, start with `AuthProvider` and `useAuth()`.
 
-## 7. Next.js integration
+## 9. Next.js integration
 
 In Next.js, components using hooks or browser-side interactions must be Client Components.
+
+For example:
+
+```tsx
+"use client";
+
+import { SignIn } from "@digit-auth/react";
+
+export default function SignInPage() {
+  return <SignIn />;
+}
+```
 
 Keep environment configuration consistent between your application and the DigitAuth API. Variables prefixed with `NEXT_PUBLIC_` are exposed to the browser and must never contain private credentials.
 
@@ -287,6 +461,14 @@ Confirm that your API URL and publishable key are present and that your environm
 **Authentication state does not update**
 
 Confirm that the component is rendered under `AuthProvider`, inspect the browser console, and check the API response.
+
+**A password reset link is reported as invalid**
+
+Confirm that the link contains a `token` query parameter, that it has not expired or already been used, and that `passwordResetPath` matches the pathname of your `ResetPassword` page.
+
+**The password reset email does not open the correct application**
+
+Confirm that the frontend origin is registered in the application's allowed origins and that the API is using the expected registered origin.
 
 **A protected page still needs authorization**
 

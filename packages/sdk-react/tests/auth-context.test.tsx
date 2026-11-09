@@ -319,6 +319,32 @@ describe("AuthProvider", () => {
     expect(window.location.search).toBe("");
     expect(document.body.textContent).not.toContain("Application content");
   });
+  it("does not treat a password reset token as an email verification token", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/reset-password?token=password-reset-token",
+    );
+
+    render(
+      <AuthProvider
+        apiUrl="http://localhost:5000/api/v1"
+        publishableKey="pk_test_example"
+      >
+        <div>Password reset application content</div>
+      </AuthProvider>,
+    );
+
+    await waitFor(() => {
+      expect(document.body.textContent).toContain(
+        "Password reset application content",
+      );
+    });
+
+    expect(window.location.pathname).toBe("/reset-password");
+    expect(window.location.search).toBe("?token=password-reset-token");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
 
   it("does not submit the same verification token twice in Strict Mode", async () => {
     window.history.replaceState({}, "", "/?token=strict-mode-token");

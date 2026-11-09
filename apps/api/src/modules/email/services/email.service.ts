@@ -126,8 +126,19 @@ export class EmailService {
     email: string;
     firstName: string;
     resetToken: string;
+    applicationOrigin?: string | undefined;
   }): Promise<void> {
-    const resetUrl = `${DASHBOARD_URL}/reset-password?token=${options.resetToken}`;
+    if (!options.applicationOrigin) {
+      throw new Error(
+        "Cannot send password reset email without a configured frontend origin.",
+      );
+    }
+
+    const applicationOrigin = options.applicationOrigin.replace(/\/+$/, "");
+
+    const resetUrl = `${applicationOrigin}/reset-password?token=${encodeURIComponent(
+      options.resetToken,
+    )}`;
 
     const html = `
       <h2>Hello ${options.firstName},</h2>

@@ -53,3 +53,9 @@ export type { SignUpProps } from "./components/sign-up";
 
 export { UserProfile } from "./components/user-profile";
 export type { UserProfileProps } from "./components/user-profile";
+
+export { ForgotPassword } from "./components/forgot-password";
+export type { ForgotPasswordProps } from "./components/forgot-password";
+
+export { ResetPassword } from "./components/reset-password";
+export type { ResetPasswordProps } from "./components/reset-password";

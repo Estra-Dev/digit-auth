@@ -150,7 +150,11 @@ export const forgotPassword = asyncHandler(
 
     const { email } = req.body;
 
-    const result = await authService.forgotPassword(applicationId, email);
+    const result = await authService.forgotPassword(
+      applicationId,
+      email,
+      getApplicationVerificationOrigin(req),
+    );
 
     return ApiResponse.success(res, {
       statusCode: 200,

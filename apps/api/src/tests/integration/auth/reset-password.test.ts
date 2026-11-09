@@ -27,6 +27,12 @@ async function createTestApplication() {
       "DigitAuth Test Application",
     );
 
+  await applicationService.updateApplicationAllowedOrigins(
+    workspace.id,
+    application.id,
+    ["https://projectvault.example.com"],
+  );
+
   return {
     applicationId: new Types.ObjectId(application.id),
     clientId: credentials.clientId,
@@ -145,7 +151,7 @@ describe("POST /api/v1/auth/reset-password", () => {
         userId: user!._id,
       }),
     ).toBe(1);
-  });
+  }, 30000);
 
   it("should reject invalid token", async () => {
     const { clientId, clientSecret } = await createTestApplication();

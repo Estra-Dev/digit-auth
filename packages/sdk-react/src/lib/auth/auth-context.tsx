@@ -85,6 +85,7 @@ export type AuthProviderProps = {
   children: ReactNode;
   apiUrl?: string;
   publishableKey: string;
+  passwordResetPath?: string;
 };
 
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -95,6 +96,7 @@ export function AuthProvider({
   children,
   apiUrl,
   publishableKey,
+  passwordResetPath = "/reset-password",
 }: AuthProviderProps) {
   const apiClient = useMemo(
     () =>
@@ -124,6 +126,15 @@ export function AuthProvider({
     }
 
     const url = new URL(window.location.href);
+
+    // Password reset tokens must never be treated as email verification tokens.
+    const currentPath = url.pathname.replace(/\/+$/, "") || "/";
+    const resetPath = passwordResetPath.replace(/\/+$/, "") || "/";
+
+    if (currentPath === resetPath) {
+      return;
+    }
+
     const token = url.searchParams.get("token");
 
     if (token === null) {
@@ -148,9 +159,7 @@ export function AuthProvider({
 
     setEmailVerification({ status: "loading" });
 
-    // The backend remains the authority on verification success.
-    // No effect cleanup cancels this request, so React Strict Mode's
-    // development effect replay cannot strand the screen in loading.
+    // No effect cleanup cancels this request, preserving Strict Mode behavior.
     void authService.verifyEmail(token).then(
       () => {
         setEmailVerification({ status: "success" });
@@ -165,7 +174,7 @@ export function AuthProvider({
         });
       },
     );
-  }, [authService]);
+  }, [authService, passwordResetPath]);
 
   const refreshUser = useCallback(async () => {
     try {

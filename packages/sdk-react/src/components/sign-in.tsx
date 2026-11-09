@@ -20,7 +20,7 @@ export type SignInProps = {
 
 export function SignIn({
   signUpUrl = "/sign-up",
-  resetPasswordUrl = "/reset-password",
+  resetPasswordUrl = "/forgot-password",
   redirectUrl = "/",
   onSuccess,
   className,
